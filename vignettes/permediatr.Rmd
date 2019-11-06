@@ -1,0 +1,64 @@
+You probably need to do the permutation confidence interval and then center it at the mean to get a null distribution.
+simulate:
+
+```{r}
+library(permediatr)
+rez = replicate(100, {
+adf <- simulate_mediation_data(J = 100, n_j = 4, a = 0, b = 1, c_p = 1)
+adf <- dplyr::mutate(
+  dplyr::group_by(
+    dplyr::mutate(adf, x_mean = mean(x), m_mean = mean(m)), 
+    id),
+  x_bc = mean(x) - x_mean,
+  x_wc = x - x_bc - x_mean,
+  m_bc = mean(m) - m_mean,
+  m_wc = m - m_bc - m_mean)
+
+ab_list <- indirect_within.lme4(data = adf, indices = NULL, y.name = 'y',
+                    x.name = 'x_wc',
+                    m_b.name = 'm_wc',
+                    m_a.name = 'm',
+                    group.id = 'id',
+                    covariates.y=c('cov.y', 'm_bc', 'x_bc'),
+                    covariates.m=c('cov.m', 'x_bc'),
+                    random.a=T,
+                    random.b=T,
+                    random.c_p=T, optimizer = "bobyqa")
+perms <- permute_within(n = 1e3, data = adf, group.id = 'id', series = F)
+perms_list <- lapply(seq_len(nrow(perms)), function(i) perms[i,])
+ncores = 7
+split_perms_list <- split(perms_list, 1:ncores)
+system.time({
+  ab_perms <- parallel::mclapply(split_perms_list, function(perm_list){
+    lapply(perm_list, function(indices){
+      ab <- indirect_within.lme4(data = adf, 
+                                indices = indices, 
+                                y.name = 'y',
+                                x.name = 'x_wc',
+                                m_b.name = 'm_wc',
+                                m_a.name = 'm',
+                                group.id = 'id',
+                                covariates.y=c('cov.y', 'm_bc', 'x_bc'),
+                                covariates.m=c('cov.m', 'x_bc'),
+                                random.a=T,
+                                random.b=T,
+                                random.c_p=T, 
+                                optimizer = "bobyqa",
+                                a.h1 = ab_list$a,
+                                b.h1 = ab_list$b)
+    })
+  }, mc.cores = ncores)
+})
+ab <- ab_list$ab
+mean(abs(unlist(ab_perms)) > abs(ab))
+})
+
+hist(rez, breaks = 25)
+
+mean(unlist(ab_perms))
+lim <- max(abs(c(ab, unlist(ab_perms))))
+hist(unlist(ab_perms), breaks = 100, xlim = c(-lim, lim))
+abline(v = ab, col = 'blue')
+plot(ecdf(scale(unlist(ab_perms))))
+lines(sort(scale(unlist(ab_perms))), pnorm(sort(scale(unlist(ab_perms)))), col = 'red')
+```
