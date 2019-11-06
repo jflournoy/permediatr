@@ -14,25 +14,32 @@ adf <- dplyr::mutate(
   m_bc = mean(m) - m_mean,
   m_wc = m - m_bc - m_mean)
 
-ab <- indirect_within.lme4(data = adf, indices = NULL, y.name = 'y',
-                    x.name = 'x_wc',
-                    m_b.name = 'm_wc',
-                    m_a.name = 'm',
-                    group.id = 'id',
-                    covariates.y=c('cov.y', 'm_bc', 'x_bc'),
-                    covariates.m=c('cov.m', 'x_bc'),
-                    random.a=T,
-                    random.b=T,
-                    random.c_p=T, optimizer = "bobyqa")
-perms <- permute_within(n = 1e3, data = adf, group.id = 'id', series = F)
-perms_list <- lapply(seq_len(nrow(perms)), function(i) perms[i,])
+ab <- indirect_within.lme4(data = adf, 
+                           indices.y = NULL, 
+                           indices.m = NULL, 
+                           y.name = 'y',
+                           x.name = 'x_wc',
+                           m_b.name = 'm_wc',
+                           m_a.name = 'm',
+                           group.id = 'id',
+                           covariates.y=c('cov.y', 'm_bc', 'x_bc'),
+                           covariates.m=c('cov.m', 'x_bc'),
+                           random.a=T,
+                           random.b=T,
+                           random.c_p=T, optimizer = "bobyqa")
+perms.y <- permute_within(n = 1e3, data = adf, group.id = 'id', series = F)
+perms.m <- permute_within(n = 1e3, data = adf, group.id = 'id', series = F)
+perms_list.y <- lapply(seq_len(nrow(perms.y)), function(i) perms[i,])
+perms_list.m <- lapply(seq_len(nrow(perms.m)), function(i) perms[i,])
 ncores = 7
-split_perms_list <- split(perms_list, 1:ncores)
+split_perms_list.y <- split(perms_list.y, 1:ncores)
+split_perms_list.m <- split(perms_list.m, 1:ncores)
 system.time({
-  ab_perms <- parallel::mclapply(split_perms_list, function(perm_list){
-    lapply(perm_list, function(indices){
+  ab_perms <- parallel::mcmapply(function(perm_list.y, perm_list.m){
+    mapply(function(indices.y, indices.m){
       ab <- indirect_within.lme4(data = adf, 
-                                indices = indices, 
+                                indices.y = indices.y,
+                                indices.m = indices.m,
                                 y.name = 'y',
                                 x.name = 'x_wc',
                                 m_b.name = 'm_wc',
@@ -44,8 +51,8 @@ system.time({
                                 random.b=T,
                                 random.c_p=T, 
                                 optimizer = "bobyqa")
-    })
-  }, mc.cores = ncores)
+    }, perm_list.y, perm_list.m, SIMPLIFY = FALSE)
+  }, split_perms_list.y, split_perms_list.m, SIMPLIFY = FALSE, mc.cores = ncores)
 })
 ab_vec <- unlist(lapply(unlist(ab_perms, recursive = F), `[[`, 'ab'))
 warnings <- unlist(lapply(unlist(ab_perms, recursive = F), `[[`, 'warnings'))

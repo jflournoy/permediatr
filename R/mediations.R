@@ -19,7 +19,7 @@
 #' @return indirect and total effect.
 #' @import lme4
 #' @export
-indirect_within.lme4 <- function(data, indices = NULL, y.name, x.name, m_b.name, m_a.name, group.id, covariates.y=NULL, covariates.m=NULL, random.a=T, random.b=T, random.c_p=T, optimizer = "nloptwrap", lmeropts = list()) {
+indirect_within.lme4 <- function(data, indices.y = NULL, indices.m = NULL, y.name, x.name, m_b.name, m_a.name, group.id, covariates.y=NULL, covariates.m=NULL, random.a=T, random.b=T, random.c_p=T, optimizer = "nloptwrap", lmeropts = list()) {
   requireNamespace('lme4', quietly = TRUE)
   re_terms.y <- c('1', c(m_b.name, x.name)[c(random.b, random.c_p)])
   re_terms.m <- c('1', c(x.name)[random.a])
@@ -40,7 +40,7 @@ indirect_within.lme4 <- function(data, indices = NULL, y.name, x.name, m_b.name,
                               REML=F,
                               control = lme4::lmerControl(optimizer = optimizer, optCtrl = list(maxfun = maxfun))),
                          lmeropts)
-  if(is.null(indices)){
+  if(is.null(indices.y) && is.null(indices.m)){
     #this is not a permutation
     e <- try({
       model.y <- do.call(lme4::lmer,
@@ -54,14 +54,14 @@ indirect_within.lme4 <- function(data, indices = NULL, y.name, x.name, m_b.name,
                            lmeropts))
       list(model.y, model.m)
     })
-  } else {
+  } else if(!is.null(indices.y) && !is.null(indices.m)){
     e <- try({
       residsModel.y <- do.call(lme4::lmer,
                                c(list(formula = form.y,
                                     data = data),
                                  lmeropts))
       epsilon_z.y <- residuals(residsModel.y)
-      P_j.epsilon_z.y <- epsilon_z.y[indices]
+      P_j.epsilon_z.y <- epsilon_z.y[indices.y]
       Zy <- predict(residsModel.y)
       data$y_star <- P_j.epsilon_z.y + Zy
       model.y <- do.call(lme4::lmer,
@@ -73,7 +73,7 @@ indirect_within.lme4 <- function(data, indices = NULL, y.name, x.name, m_b.name,
                                     data = data),
                                  lmeropts))
       epsilon_z.m <- residuals(residsModel.m)
-      P_j.epsilon_z.m <- epsilon_z.m[indices]
+      P_j.epsilon_z.m <- epsilon_z.m[indices.m]
       Zm <- predict(residsModel.m)
       data$m_star <- P_j.epsilon_z.m + Zm
       model.m <- do.call(lme4::lmer,
@@ -82,6 +82,8 @@ indirect_within.lme4 <- function(data, indices = NULL, y.name, x.name, m_b.name,
                            lmeropts))
       list(model.y, residsModel.y, model.m, residsModel.m)
     })
+  } else {
+    stop('Indices must be all NULL or given.')
   }
   if(inherits(e, 'try-error')){
     within.indirect.effect <- NA
