@@ -19,16 +19,12 @@
 #' @return indirect and total effect.
 #' @import lme4
 #' @export
-indirect_within.lme4 <- function(data, indices = NULL, y.name, x.name, m_b.name, m_a.name, group.id, covariates.y=NULL, covariates.m=NULL, random.a=T, random.b=T, random.c_p=T, optimizer = "nloptwrap", a.h1 = NULL, b.h1 = NULL, lmeropts = list()) {
+indirect_within.lme4 <- function(data, indices = NULL, y.name, x.name, m_b.name, m_a.name, group.id, covariates.y=NULL, covariates.m=NULL, random.a=T, random.b=T, random.c_p=T, optimizer = "nloptwrap", lmeropts = list()) {
   requireNamespace('lme4', quietly = TRUE)
   re_terms.y <- c('1', c(m_b.name, x.name)[c(random.b, random.c_p)])
   re_terms.m <- c('1', c(x.name)[random.a])
-  re_terms.y.resid <- c('1', c(x.name)[random.c_p])
-  re_terms.m.resid <- c('1')
   re_part.y <- paste0('(', paste(re_terms.y, collapse = ' + '), ' | ', group.id, ')')
   re_part.m <- paste0('(', paste(re_terms.m, collapse = ' + '), ' | ', group.id, ')')
-  re_part.y.resid <- paste0('(', paste(re_terms.y.resid, collapse = ' + '), ' | ', group.id, ')')
-  re_part.m.resid <- paste0('(', paste(re_terms.m.resid, collapse = ' + '), ' | ', group.id, ')')
   form.y <- as.formula(paste0(y.name, ' ~ 1 + ',
                               paste(covariates.y, collapse = ' + '),
                               ' + ', m_b.name, ' + ', x.name,
@@ -37,14 +33,7 @@ indirect_within.lme4 <- function(data, indices = NULL, y.name, x.name, m_b.name,
                               paste(covariates.m, collapse = ' + '),
                               ' + ', x.name,
                               ' + ', re_part.m))
-  residsFormula.y <- as.formula(paste0(y.name, ' ~ 1 + ',
-                                       paste(covariates.y, collapse = ' + '),
-                                       ' + ', x.name,
-                                       ' + ', re_part.y.resid))
   starFormula.y <- update(form.y, as.formula(paste0('y_star ~ .')))
-  residsFormula.m <- as.formula(paste0(m_a.name, ' ~ 1 + ',
-                                       paste(covariates.m, collapse = ' + '),
-                                       ' + ', re_part.m.resid))
   starFormula.m <- update(form.m, as.formula(paste0('m_star ~ .')))
   maxfun <- permediatr::getmaxfun(form.y, data)
   lmeropts <- modifyList(list(na.action='na.fail',
@@ -63,64 +52,24 @@ indirect_within.lme4 <- function(data, indices = NULL, y.name, x.name, m_b.name,
                          c(list(formula = form.m,
                               data = data),
                            lmeropts))
+      list(model.y, model.m)
     })
-    if(inherits(e, 'try-error')){
-      within.indirect.effect <- NA
-    } else {
-      if(random.a==T){
-        a <- coef(model.m)[[group.id]][[x.name]]
-      } else {
-        a <- fixef(model.m)[x.name]
-      }
-      if(random.b==T){
-        b <- coef(model.y)[[group.id]][[m_b.name]]
-      } else {
-        b <- fixef(model.y)[m_b.name]
-      }
-
-      #Within-Group Indirect Effects
-      within.indirect.effect <- list(ab = mean(a * b, na.rm=T), a = a, b = b)
-    }
   } else {
     e <- try({
-      if(is.null(b.h1)){
-        model.y.h1 <- do.call(lme4::lmer,
-                              c(list(formula = form.y,
-                                   data = data),
-                              lmeropts))
-        if(random.b==T){
-          b.h1 <- coef(model.y.h1)[[group.id]][[m_b.name]]
-        } else {
-          b.h1 <- fixef(model.y.h1)[m_b.name]
-        }
-      }
-      if(is.null(a.h1)){
-        model.m.h1 <- do.call(lme4::lmer,
-                              c(list(formula = form.m,
-                                   data = data),
-                                lmeropts))
-        if(random.a==T){
-          a.h1 <- coef(model.m.h1)[[group.id]][[x.name]]
-        } else {
-          a.h1 <- fixef(model.m.h1)[x.name]
-        }
-      }
       residsModel.y <- do.call(lme4::lmer,
-                               c(list(formula = residsFormula.y,
+                               c(list(formula = form.y,
                                     data = data),
                                  lmeropts))
       epsilon_z.y <- residuals(residsModel.y)
       P_j.epsilon_z.y <- epsilon_z.y[indices]
       Zy <- predict(residsModel.y)
       data$y_star <- P_j.epsilon_z.y + Zy
-
       model.y <- do.call(lme4::lmer,
                          c(list(formula = starFormula.y,
                               data = data),
                            lmeropts))
-
       residsModel.m <- do.call(lme4::lmer,
-                               c(list(formula = residsFormula.m,
+                               c(list(formula = form.m,
                                     data = data),
                                  lmeropts))
       epsilon_z.m <- residuals(residsModel.m)
@@ -129,30 +78,30 @@ indirect_within.lme4 <- function(data, indices = NULL, y.name, x.name, m_b.name,
       data$m_star <- P_j.epsilon_z.m + Zm
       model.m <- do.call(lme4::lmer,
                          c(list(formula = starFormula.m,
-                              data = data,
-                              na.action='na.fail'),
+                              data = data),
                            lmeropts))
+      list(model.y, residsModel.y, model.m, residsModel.m)
     })
-    if(inherits(e, 'try-error')){
-      within.indirect.effect <- NA
-    } else {
-
-      if(random.a==T){
-        a <- coef(model.m)[[group.id]][[x.name]]
-      } else {
-        a <- fixef(model.m)[x.name]
-      }
-      if(random.b==T){
-        b <- coef(model.y)[[group.id]][[m_b.name]]
-      } else {
-        b <- fixef(model.y)[m_b.name]
-      }
-
-      #Within-Group Indirect Effects
-      within.indirect.effect <- c(abh1 = mean(a * b.h1, na.rm=T), ah1b = mean(a.h1 * b, na.rm=T))
-    }
   }
-  return(within.indirect.effect)
+  if(inherits(e, 'try-error')){
+    within.indirect.effect <- NA
+    warnings <- NULL
+  } else {
+    if(random.a==T){
+      a <- coef(model.m)[[group.id]][[x.name]]
+    } else {
+      a <- fixef(model.m)[x.name]
+    }
+    if(random.b==T){
+      b <- coef(model.y)[[group.id]][[m_b.name]]
+    } else {
+      b <- fixef(model.y)[m_b.name]
+    }
+    #Within-Group Indirect Effects
+    within.indirect.effect <- mean(a * b, na.rm=T)
+    warnings <- unlist(lapply(e, function(fit) fit@optinfo$warnings))
+  }
+  return(list(ab = within.indirect.effect, warnings = warnings))
 }
 #' permute_within
 #'

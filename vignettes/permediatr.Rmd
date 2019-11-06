@@ -4,7 +4,7 @@ simulate:
 ```{r}
 library(permediatr)
 rez = replicate(100, {
-adf <- simulate_mediation_data(J = 100, n_j = 4, a = 0, b = 1, c_p = 1)
+adf <- simulate_mediation_data(J = 100, n_j = 4, a = 0, b = 0, c_p = 0)
 adf <- dplyr::mutate(
   dplyr::group_by(
     dplyr::mutate(adf, x_mean = mean(x), m_mean = mean(m)), 
@@ -14,7 +14,7 @@ adf <- dplyr::mutate(
   m_bc = mean(m) - m_mean,
   m_wc = m - m_bc - m_mean)
 
-ab_list <- indirect_within.lme4(data = adf, indices = NULL, y.name = 'y',
+ab <- indirect_within.lme4(data = adf, indices = NULL, y.name = 'y',
                     x.name = 'x_wc',
                     m_b.name = 'm_wc',
                     m_a.name = 'm',
@@ -43,22 +43,23 @@ system.time({
                                 random.a=T,
                                 random.b=T,
                                 random.c_p=T, 
-                                optimizer = "bobyqa",
-                                a.h1 = ab_list$a,
-                                b.h1 = ab_list$b)
+                                optimizer = "bobyqa")
     })
   }, mc.cores = ncores)
 })
-ab <- ab_list$ab
-mean(abs(unlist(ab_perms)) > abs(ab))
+ab_vec <- unlist(lapply(unlist(ab_perms, recursive = F), `[[`, 'ab'))
+warnings <- unlist(lapply(unlist(ab_perms, recursive = F), `[[`, 'warnings'))
 })
 
 hist(rez, breaks = 25)
 
-mean(unlist(ab_perms))
-lim <- max(abs(c(ab, unlist(ab_perms))))
-hist(unlist(ab_perms), breaks = 100, xlim = c(-lim, lim))
-abline(v = ab, col = 'blue')
-plot(ecdf(scale(unlist(ab_perms))))
-lines(sort(scale(unlist(ab_perms))), pnorm(sort(scale(unlist(ab_perms)))), col = 'red')
+mean(ab_vec)
+ab
+lim <- max(abs(c(ab$ab, ab_vec)))
+hist(unlist(ab_vec), breaks = 100, xlim = c(-lim, lim))
+abline(v = ab$ab, col = 'blue')
+hist(ab_vec - ab$ab, breaks = 100, xlim = c(-lim, lim))
+abline(v = ab$ab, col = 'blue')
+plot(ecdf(scale(ab_vec)))
+lines(sort(scale(ab_vec)), pnorm(sort(scale(ab_vec))), col = 'red')
 ```
