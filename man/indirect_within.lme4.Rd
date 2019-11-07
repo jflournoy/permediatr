@@ -4,15 +4,13 @@
 \alias{indirect_within.lme4}
 \title{indirect_within.lme4}
 \usage{
-indirect_within.lme4(data, indices = NULL, y.name, x.name, m_b.name,
-  m_a.name, group.id, covariates.y = NULL, covariates.m = NULL,
-  random.a = T, random.b = T, random.c_p = T,
-  optimizer = "nloptwrap")
+indirect_within.lme4(data, indices.y = NULL, indices.m = NULL, y.name,
+  x.name, m_b.name, m_a.name, group.id, covariates.y = NULL,
+  covariates.m = NULL, random.a = T, random.b = T, random.c_p = T,
+  optimizer = "nloptwrap", lmeropts = list())
 }
 \arguments{
 \item{data}{Data frame. Should not have missing values.}
-
-\item{indices}{For permuting. Should be the same length as dim(data)[1]}
 
 \item{y.name}{y variable name.}
 
@@ -35,6 +33,8 @@ indirect_within.lme4(data, indices = NULL, y.name, x.name, m_b.name,
 \item{random.c_p}{include random effect for y on x (c' path).}
 
 \item{optimizer}{}
+
+\item{indices}{For permuting. Should be the same length as dim(data)[1]}
 }
 \value{
 indirect and total effect.

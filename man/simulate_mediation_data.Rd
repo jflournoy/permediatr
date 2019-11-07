@@ -2,7 +2,7 @@
 % Please edit documentation in R/simulate.R
 \name{simulate_mediation_data}
 \alias{simulate_mediation_data}
-\title{Title}
+\title{simulate_mediation_data}
 \usage{
 simulate_mediation_data(J = 100, n_j = 4, a = 0, b = 0, c_p = 0,
   theta_ab = 0.2)
@@ -11,5 +11,5 @@ simulate_mediation_data(J = 100, n_j = 4, a = 0, b = 0, c_p = 0,
 \item{theta_ab}{}
 }
 \description{
-Title
+simulate_mediation_data
 }

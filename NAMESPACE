@@ -3,5 +3,6 @@
 export(getmaxfun)
 export(indirect_within.lme4)
 export(permute_within)
+export(run_permutation_simulation)
 export(simulate_mediation_data)
 import(lme4)

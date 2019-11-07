@@ -3,16 +3,9 @@ simulate:
 
 ```{r}
 library(permediatr)
-rez = replicate(100, {
+rez = replicate(2, {
+ncores = 7
 adf <- simulate_mediation_data(J = 100, n_j = 4, a = 0, b = 0, c_p = 0)
-adf <- dplyr::mutate(
-  dplyr::group_by(
-    dplyr::mutate(adf, x_mean = mean(x), m_mean = mean(m)), 
-    id),
-  x_bc = mean(x) - x_mean,
-  x_wc = x - x_bc - x_mean,
-  m_bc = mean(m) - m_mean,
-  m_wc = m - m_bc - m_mean)
 
 ab <- indirect_within.lme4(data = adf, 
                            indices.y = NULL, 
@@ -31,7 +24,6 @@ perms.y <- permute_within(n = 1e3, data = adf, group.id = 'id', series = F)
 perms.m <- permute_within(n = 1e3, data = adf, group.id = 'id', series = F)
 perms_list.y <- lapply(seq_len(nrow(perms.y)), function(i) perms[i,])
 perms_list.m <- lapply(seq_len(nrow(perms.m)), function(i) perms[i,])
-ncores = 7
 split_perms_list.y <- split(perms_list.y, 1:ncores)
 split_perms_list.m <- split(perms_list.m, 1:ncores)
 system.time({
@@ -54,19 +46,25 @@ system.time({
     }, perm_list.y, perm_list.m, SIMPLIFY = FALSE)
   }, split_perms_list.y, split_perms_list.m, SIMPLIFY = FALSE, mc.cores = ncores)
 })
+no_convwarnings <- unlist(lapply(unlist(ab_perms, recursive = F), function(aperm){
+  awarning <- aperm[['warnings']]
+  is.null(awarning)
+}))
 ab_vec <- unlist(lapply(unlist(ab_perms, recursive = F), `[[`, 'ab'))
-warnings <- unlist(lapply(unlist(ab_perms, recursive = F), `[[`, 'warnings'))
+ab_vec <- ab_vec[no_convwarnings]
+ab_vec_centered_mean <- ab_vec - mean(ab_vec)
+ab_vec_centered_ab <- ab_vec - ab$ab
+p_ab_perm_mean_c <- ecdf(ab_vec_centered_mean)(ab$ab)
+p_ab_perm_ab_c <- ecdf(ab_vec_centered_ab)(ab$ab)
+p_opsign_ci <- mean(sign(ab$ab)*ab_vec < 0)
+n_conv_warn <- sum(!no_convwarnings)
+list(p_ab_perm_mean_c = p_ab_perm_mean_c, 
+     p_ab_perm_ab_c = p_ab_perm_ab_c, 
+     p_opsign_ci = p_opsign_ci, 
+     n_conv_warn = n_conv_warn, 
+     ab = ab, 
+     mean_ab_perm = mean(ab_vec))
 })
-
+rez
 hist(rez, breaks = 25)
-
-mean(ab_vec)
-ab
-lim <- max(abs(c(ab$ab, ab_vec)))
-hist(unlist(ab_vec), breaks = 100, xlim = c(-lim, lim))
-abline(v = ab$ab, col = 'blue')
-hist(ab_vec - ab$ab, breaks = 100, xlim = c(-lim, lim))
-abline(v = ab$ab, col = 'blue')
-plot(ecdf(scale(ab_vec)))
-lines(sort(scale(ab_vec)), pnorm(sort(scale(ab_vec))), col = 'red')
 ```
