@@ -5,7 +5,7 @@ parser <- ArgumentParser(description='Run a simulation study using permediatr')
 parser$add_argument('save_dir', type="character",
                     help='This is the path where the results will be saved')
 parser$add_argument('simulation_name', type="character", help='Name of the simulation')
-parser$add_argument('--nrep', type="integer",
+parser$add_argument('--nreps', type="integer",
                     help = 'Number of repetitions. New data will generated for each repetition.',
                     required = TRUE)
 parser$add_argument('--nperms', type="integer",
@@ -35,22 +35,7 @@ parser$add_argument('--theta_ab', type="double",
 parser$add_argument('--optimizer', type="character", help='Name of the optimizer to use in the lme4::lmer calls.', default = 'bobyqa')
 args <- parser$parse_args()
 
-args <- parser$parse_args(c(
-  '--nrep', '2',
-  '--nperms', '100',
-  '--mc.cores', '7',
-  '--J', '100',
-  '--n_j', '10',
-  '--a', '0',
-  '--b', '0',
-  '--c_p', '0',
-  '--theta_ab', '.2',
-  '--optimizer', 'bobyqa',
-  '/data/jflournoy/permediatr/',
-  'test'
-))
-
-results <- run_permutation_simulation(nrep = as.numeric(args$nrep),
+results <- run_permutation_simulation(nreps = as.numeric(args$nreps),
                                       nperms = args$nperms,
                                       mc.cores = args$mc.cores,
                                       J = args$J,

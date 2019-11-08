@@ -4,7 +4,7 @@
 \alias{run_permutation_simulation}
 \title{run_permutation_simulation}
 \usage{
-run_permutation_simulation(nrep, nperms, mc.cores, J = 100, n_j = 4,
+run_permutation_simulation(nreps, nperms, mc.cores, J = 100, n_j = 4,
   a = 0, b = 0, c_p = 0, theta_ab = 0.2, optimizer = "bobyqa")
 }
 \arguments{

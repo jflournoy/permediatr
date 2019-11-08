@@ -80,7 +80,7 @@ simulate_mediation_data <- function(J = 100, n_j = 4, a = 0, b = 0, c_p = 0, the
 
 #' run_permutation_simulation
 #'
-#' @param nrep
+#' @param nreps
 #' @param mc.cores
 #' @param J
 #' @param n_j
@@ -94,9 +94,18 @@ simulate_mediation_data <- function(J = 100, n_j = 4, a = 0, b = 0, c_p = 0, the
 #' @export
 #'
 #' @examples
-run_permutation_simulation <- function(nrep, nperms, mc.cores, J = 100, n_j = 4, a = 0, b = 0, c_p = 0, theta_ab = .2, optimizer = "bobyqa"){
+run_permutation_simulation <- function(nreps, nperms, mc.cores, J = 100, n_j = 4, a = 0, b = 0, c_p = 0, theta_ab = .2, optimizer = "bobyqa"){
+  message("Running ", nreps, " simulations with the following parameters:
+permutations: ", nperms,"
+J: ", J,"
+n_j: ", n_j,"
+a: ", a,"
+b: ", b,"
+c_p: ", c_p,"
+theta_ab: ", theta_ab,"
+optimizer: ", optimizer)
   #could make this slightly more efficient by splitting up reps differently.
-  reps <- replicate(nrep, {
+  reps <- replicate(nreps, {
     adf <- simulate_mediation_data(J = J, n_j = n_j, a = a, b = b, c_p = c_p, theta_ab = theta_ab)
     ab <- indirect_within.lme4(data = adf,
                                indices.y = NULL,
@@ -113,8 +122,8 @@ run_permutation_simulation <- function(nrep, nperms, mc.cores, J = 100, n_j = 4,
                                random.c_p=T, optimizer = optimizer)
     perms.y <- permute_within(n = nperms, data = adf, group.id = 'id', series = F)
     perms.m <- permute_within(n = nperms, data = adf, group.id = 'id', series = F)
-    perms_list.y <- lapply(seq_len(nrow(perms.y)), function(i) perms[i,])
-    perms_list.m <- lapply(seq_len(nrow(perms.m)), function(i) perms[i,])
+    perms_list.y <- lapply(seq_len(nrow(perms.y)), function(i) perms.y[i,])
+    perms_list.m <- lapply(seq_len(nrow(perms.m)), function(i) perms.m[i,])
     split_perms_list.y <- split(perms_list.y, 1:mc.cores)
     split_perms_list.m <- split(perms_list.m, 1:mc.cores)
     system.time({
