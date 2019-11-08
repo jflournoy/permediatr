@@ -55,7 +55,7 @@ generate_slurm_file <- function(bash_out_dir, nreps, nperms, mc.cores, J = 100, 
 #SBATCH -e %x-%A-%a.err', mail_line,'
 # ------------------------------------------
 #
-#usage: sbatch --array=', job_array_range,' ', path_to_script,'
+#usage: sbatch --array=', job_array_range,' ', file.path(bash_out_dir, 'slurmjob.bash'),'
 
 nreps=', nreps,'
 nperms=', nperms,'
