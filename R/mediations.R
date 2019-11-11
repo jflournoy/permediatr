@@ -101,7 +101,8 @@ indirect_within.lme4 <- function(data, indices.y = NULL, indices.m = NULL, y.nam
     }
     #Within-Group Indirect Effects
     within.indirect.effect <- mean(a * b, na.rm=T)
-    warnings <- unlist(lapply(e, function(fit) fit@optinfo$warnings))
+    singular_fit <- unlist(lapply(e, function(fit) return(ifelse(isSingular(fit), 'Singular', charact))))
+    warnings <- c(unlist(lapply(e, function(fit) fit@optinfo$warnings)), singular_fit)
   }
   return(list(ab = within.indirect.effect, warnings = warnings))
 }
