@@ -134,7 +134,7 @@ optimizer: ", optimizer)
     split_perms_list.y <- suppressWarnings(split(perms_list.y, 1:mc.cores))
     split_perms_list.m <- suppressWarnings(split(perms_list.m, 1:mc.cores))
     message('Evaluating ', nperms, ' permutations over ', mc.cores, ' processors...')
-    system.time({
+    perm_set_time <- system.time({
       ab_perms <- parallel::mcmapply(function(perm_list.y, perm_list.m){
         mapply(function(indices.y, indices.m){
           ab <- indirect_within.lme4(data = adf,
@@ -154,6 +154,7 @@ optimizer: ", optimizer)
         }, perm_list.y, perm_list.m, SIMPLIFY = FALSE)
       }, split_perms_list.y, split_perms_list.m, SIMPLIFY = FALSE, mc.cores = mc.cores)
     })
+    message('Parallel evaluitation took: ', perm_set_time[['elapsed']], 's')
     no_convwarnings <- unlist(lapply(unlist(ab_perms, recursive = F), function(aperm){
       awarning <- aperm[['warnings']]
       is.null(awarning)
