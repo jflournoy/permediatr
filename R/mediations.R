@@ -114,6 +114,7 @@ indirect_within.lme4 <- function(data, indices.y = NULL, indices.m = NULL, y.nam
 #'
 #' @return
 #' @export
+#' @import permute
 #'
 #' @examples
 permute_within <- function(n, data, group.id, series = F){
@@ -137,6 +138,7 @@ permute_within <- function(n, data, group.id, series = F){
 #'
 #' @return
 #' @export
+#' @import lme4
 #'
 #' @examples
 getmaxfun <- function(form, data){

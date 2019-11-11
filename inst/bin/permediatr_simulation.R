@@ -45,8 +45,11 @@ results <- run_permutation_simulation(nreps = as.numeric(args$nreps),
                                       c_p = args$c_p,
                                       theta_ab = args$theta_ab,
                                       optimizer = args$optimizer)
-
-saveRDS(results, file = file.path(args$save_dir, paste0(args$simulation_name, '.RDS')))
+rds_file <- file.path(args$save_dir, paste0(args$simulation_name, '.rds'))
+message('Saving results to RDS file: ', rds_file)
+saveRDS(results, file = rds_file)
+csv_file <- file.path(args$save_dir, paste0(args$simulation_name, '.csv'))
+message('Saving results to CSV file: ', csv_file)
 results_df <- do.call(rbind,lapply(results, function(x) data.frame(t(unlist(x[-which(names(x) == 'ab_warnings')])))))
 results_csv <- cbind(results_df, data.frame(args))
-write.csv(results_csv, file = file.path(args$save_dir, paste0(args$simulation_name, '.csv')))
+write.csv(results_csv, file = csv_file)

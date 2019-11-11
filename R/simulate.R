@@ -9,6 +9,7 @@
 #'
 #' @return
 #' @export
+#' @import lme4
 #'
 #' @examples
 simulate_mediation_data <- function(J = 100, n_j = 4, a = 0, b = 0, c_p = 0, theta_ab = .2){
@@ -92,10 +93,11 @@ simulate_mediation_data <- function(J = 100, n_j = 4, a = 0, b = 0, c_p = 0, the
 #'
 #' @return
 #' @export
+#' @import pbapply
 #'
 #' @examples
 run_permutation_simulation <- function(nreps, nperms, mc.cores, J = 100, n_j = 4, a = 0, b = 0, c_p = 0, theta_ab = .2, optimizer = "bobyqa"){
-  message("Running ", nreps, " simulations with the following parameters:
+  message("\nRunning ", nreps, " simulations with the following parameters:
 permutations: ", nperms,"
 J: ", J,"
 n_j: ", n_j,"
@@ -105,7 +107,11 @@ c_p: ", c_p,"
 theta_ab: ", theta_ab,"
 optimizer: ", optimizer)
   #could make this slightly more efficient by splitting up reps differently.
-  reps <- replicate(nreps, {
+  nreps_digits <- 1 + floor(log10(nreps))
+  pbapply::pboptions(type = 'timer', char = '+', style = 3)
+  reps <- pbapply::pblapply(1:nreps, function (i) {
+    message(sprintf(paste0('\nReplication % ', nreps_digits, 'd out of %d'), i, nreps))
+    message('Generating new data...')
     adf <- simulate_mediation_data(J = J, n_j = n_j, a = a, b = b, c_p = c_p, theta_ab = theta_ab)
     ab <- indirect_within.lme4(data = adf,
                                indices.y = NULL,
@@ -120,12 +126,14 @@ optimizer: ", optimizer)
                                random.a=T,
                                random.b=T,
                                random.c_p=T, optimizer = optimizer)
+    message('Generating permutations...')
     perms.y <- permute_within(n = nperms, data = adf, group.id = 'id', series = F)
     perms.m <- permute_within(n = nperms, data = adf, group.id = 'id', series = F)
     perms_list.y <- lapply(seq_len(nrow(perms.y)), function(i) perms.y[i,])
     perms_list.m <- lapply(seq_len(nrow(perms.m)), function(i) perms.m[i,])
-    split_perms_list.y <- split(perms_list.y, 1:mc.cores)
-    split_perms_list.m <- split(perms_list.m, 1:mc.cores)
+    split_perms_list.y <- suppressWarnings(split(perms_list.y, 1:mc.cores))
+    split_perms_list.m <- suppressWarnings(split(perms_list.m, 1:mc.cores))
+    message('Evaluating ', nperms, ' permutations over ', mc.cores, ' processors...')
     system.time({
       ab_perms <- parallel::mcmapply(function(perm_list.y, perm_list.m){
         mapply(function(indices.y, indices.m){
@@ -158,13 +166,15 @@ optimizer: ", optimizer)
     p_ab_perm_ab_c <- ecdf(ab_vec_centered_ab)(ab$ab)
     p_opsign_ci <- mean(sign(ab$ab)*ab_vec < 0)
     n_conv_warn <- sum(!no_convwarnings)
-    list(p_ab_perm_mean_c = p_ab_perm_mean_c,
+    message('Finished this replication. Number of convergence warnings: ', n_conv_warn, '\n')
+    results_list <- list(p_ab_perm_mean_c = p_ab_perm_mean_c,
          p_ab_perm_ab_c = p_ab_perm_ab_c,
          p_opsign_ci = p_opsign_ci,
          n_conv_warn = n_conv_warn,
          ab = ab$ab,
          ab_warnings = ab$warnings,
          mean_ab_perm = mean(ab_vec))
-  }, simplify = FALSE)
+    return(results_list)
+  })
   return(reps)
 }

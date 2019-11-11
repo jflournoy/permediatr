@@ -4,7 +4,7 @@ simulate:
 ```{r}
 library(permediatr)
 permediatr::generate_slurm_file(bash_out_dir = '../inst/bin/', 
-                                nreps = 1000, nperms = 1000, mc.cores = 10,
+                                nreps = 1000, nperms = 5000, mc.cores = 20,
                                 J = 100, n_j = 10,
                                 a = c(0, .2, .5, 1),
                                 b = c(0, .2, .5, 1),
@@ -13,8 +13,12 @@ permediatr::generate_slurm_file(bash_out_dir = '../inst/bin/',
                                 optimizer = 'bobyqa',
                                 job_name = 'permediatr',
                                 job_time = '2-00:00:00',
-                                job_mem = '5G', 
+                                job_mem = '10G', 
                                 partition = 'ncf_holy', 
                                 email_address = 'john_flournoy@fas.harvard.edu', 
                                 save_dir = '/net/holynfs01/srv/export/mclaughlin/share_root/users/jflournoy/data')
+```
+
+```{r, eval = F}
+rez <- permediatr::run_permutation_simulation(nreps = 10, nperms = 28, mc.cores = 7, J = 100, n_j = 10, a = 0, b = 0, c_p = 0, theta_ab = .2, optimizer = 'bobyqa')
 ```
