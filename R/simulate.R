@@ -163,9 +163,18 @@ optimizer: ", optimizer)
     ab_vec <- ab_vec[no_convwarnings]
     ab_vec_centered_mean <- ab_vec - mean(ab_vec)
     ab_vec_centered_ab <- ab_vec - ab$ab
-    p_ab_perm_mean_c <- ecdf(ab_vec_centered_mean)(ab$ab)
-    p_ab_perm_ab_c <- ecdf(ab_vec_centered_ab)(ab$ab)
-    p_opsign_ci <- mean(sign(ab$ab)*ab_vec < 0)
+    p_ab_perm_mean_c <- NA
+    p_ab_perm_ab_c <- NA
+    p_opsign_ci <- NA
+    e_mean_c <- try({p_ab_perm_mean_c <- ecdf(ab_vec_centered_mean)(ab$ab)})
+    e_ab_c <- try({p_ab_perm_ab_c <- ecdf(ab_vec_centered_ab)(ab$ab)})
+    e_ci <- try({p_opsign_ci <- mean(sign(ab$ab)*ab_vec < 0))})
+    e_list <- list(e_mean_c = e_mean_c, e_ab_c = e_ab_c, e_ci = e_ci)
+    lapply(1:length(e_list), function(i){
+        if(inherits(e_list[[i]], 'try-error')){
+            warning('Error in computing p value: ', names(e_list)[[i]])
+        }
+    })
     n_conv_warn <- sum(!no_convwarnings)
     message('Finished this replication. Number of convergence warnings: ', n_conv_warn, '\n')
     results_list <- list(p_ab_perm_mean_c = p_ab_perm_mean_c,
