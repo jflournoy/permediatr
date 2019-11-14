@@ -19,7 +19,7 @@
 #' @return indirect and total effect.
 #' @import lme4
 #' @export
-indirect_within.lme4 <- function(data, indices.y = NULL, indices.m = NULL, y.name, x.name, m_b.name, m_a.name, group.id, covariates.y=NULL, covariates.m=NULL, random.a=T, random.b=T, random.c_p=T, optimizer = "nloptwrap", lmeropts = list()) {
+indirect_within.lme4 <- function(data, indices.y = NULL, indices.m = NULL, y.name, x.name, m_b.name, m_a.name, group.id, covariates.y=NULL, covariates.m=NULL, random.a=T, random.b=T, random.c_p=T, optimizer = "nloptwrap", lmeropts = list(), re.form.y = NULL, re.form.m = NULL) {
   requireNamespace('lme4', quietly = TRUE)
   re_terms.y <- c('1', c(m_b.name, x.name)[c(random.b, random.c_p)])
   re_terms.m <- c('1', c(x.name)[random.a])
@@ -60,9 +60,9 @@ indirect_within.lme4 <- function(data, indices.y = NULL, indices.m = NULL, y.nam
                                c(list(formula = form.y,
                                     data = data),
                                  lmeropts))
-      epsilon_z.y <- residuals(residsModel.y)
+      Zy <- predict(residsModel.y, re.form = re.form.y)
+      epsilon_z.y <- residsModel.y@frame$y - Zy
       P_j.epsilon_z.y <- epsilon_z.y[indices.y]
-      Zy <- predict(residsModel.y)
       data$y_star <- P_j.epsilon_z.y + Zy
       model.y <- do.call(lme4::lmer,
                          c(list(formula = starFormula.y,
@@ -72,9 +72,9 @@ indirect_within.lme4 <- function(data, indices.y = NULL, indices.m = NULL, y.nam
                                c(list(formula = form.m,
                                     data = data),
                                  lmeropts))
-      epsilon_z.m <- residuals(residsModel.m)
+      Zm <- predict(residsModel.m, re.form = re.form.m)
+      epsilon_z.m <- residsModel.m@frame$m - Zm
       P_j.epsilon_z.m <- epsilon_z.m[indices.m]
-      Zm <- predict(residsModel.m)
       data$m_star <- P_j.epsilon_z.m + Zm
       model.m <- do.call(lme4::lmer,
                          c(list(formula = starFormula.m,
@@ -101,8 +101,13 @@ indirect_within.lme4 <- function(data, indices.y = NULL, indices.m = NULL, y.nam
     }
     #Within-Group Indirect Effects
     within.indirect.effect <- mean(a * b, na.rm=T)
-    #singular_fit <- unlist(lapply(e, function(fit) return(ifelse(isSingular(fit), 'Singular', character()))))
-    warnings <- unlist(lapply(e, function(fit) fit@optinfo$warnings))
+    warnings <- unlist(lapply(e, function(fit) {
+      warnings <- fit@optinfo$warnings
+      if(isSingular(fit)){
+        warnings <- c(warnings, 'singular')
+      }
+      return(warnings)
+    }))
   }
   return(list(ab = within.indirect.effect, warnings = warnings))
 }
