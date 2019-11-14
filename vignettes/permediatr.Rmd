@@ -1,24 +1,33 @@
-You probably need to do the permutation confidence interval and then center it at the mean to get a null distribution.
-simulate:
+The output from the simulations needs to be collected first from the csv output. Another aspect of the output is that each simulation gives the p-value of the indirect path as just the cumulative probability. We want to reject the null for any indirect path where that is either < .025 or > .975. I'll summarize the output to look at the error rate (any null rejection) for each subset of simulation input (a path, b path, and c_p path). There are three ways I could imagine getting a p-value from the permutation-generated confidence interval -- first, subtracting the mean of all permutations, to center the CI around 0, `p_ab_perm_mean_c`; second, centering that distribution around the model-estimated a*b path, `p_ab_perm_ab_c`; and third, taking the proportion of the CI that is below 0. In the final case, to keep the test two-sided, we reject the null when > .025 proportion of the tail is of the sign opposite the indirect effect estimate.
 
 ```{r}
-library(permediatr)
-permediatr::generate_slurm_file(bash_out_dir = '../inst/bin/', 
-                                nreps = 1000, nperms = 5000, mc.cores = 20,
-                                J = 100, n_j = 10,
-                                a = c(0, .2, .5, 1),
-                                b = c(0, .2, .5, 1),
-                                c_p = c(0, .5, 1),
-                                theta_ab = .2,
-                                optimizer = 'bobyqa',
-                                job_name = 'permediatr',
-                                job_time = '2-00:00:00',
-                                job_mem = '10G', 
-                                partition = 'ncf_holy', 
-                                email_address = 'john_flournoy@fas.harvard.edu', 
-                                save_dir = '/net/holynfs01/srv/export/mclaughlin/share_root/users/jflournoy/data')
+library(data.table)
+library(ggplot2)
+file_list <- dir(system.file('csv', package = 'permediatr'), 
+                 pattern = '*csv', full.names = TRUE)
+
+sim_results <- data.table::rbindlist(lapply(file_list, data.table::fread))
+
+proportion_fp <- function(p) {
+  return(mean(p < .025) + mean(p > .975))
+}
+
+sim_results_summary <- 
+  sim_results[, .(p_ab_perm_mean_c = proportion_fp(p_ab_perm_mean_c),
+                  p_ab_perm_ab_c = proportion_fp(p_ab_perm_ab_c),
+                  p_opsign_ci = mean(p_opsign_ci < .025)), 
+              by = .(a, b, c_p)]
+sim_results_summary_l <- data.table::melt(sim_results_summary, id.vars = c('a', 'b', 'c_p'),
+                 measure.vars = c('p_ab_perm_mean_c', 'p_ab_perm_ab_c', 'p_opsign_ci'))
+sim_results_summary_l[, biggest := pmax(a,b)]
 ```
 
-```{r, eval = F}
-rez <- permediatr::run_permutation_simulation(nreps = 10, nperms = 28, mc.cores = 7, J = 100, n_j = 10, a = 0, b = 0, c_p = 0, theta_ab = .2, optimizer = 'bobyqa')
+```{r}
+ggplot(sim_results_summary_l, aes(x = a, y = value, group = interaction(b,c_p))) +
+  geom_hline(yintercept = .05, linetype = 'dotted') +
+  geom_point(aes(shape = factor(c_p)), alpha = .5, size = 2) + 
+  geom_line(aes(color = b)) +
+  scale_y_log10(breaks = c(.05, .5, 1)) +
+  facet_wrap(~variable) +
+  theme_minimal()
 ```
