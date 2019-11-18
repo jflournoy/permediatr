@@ -101,15 +101,19 @@ indirect_within.lme4 <- function(data, indices.y = NULL, indices.m = NULL, y.nam
     }
     #Within-Group Indirect Effects
     within.indirect.effect <- mean(a * b, na.rm=T)
+    singulars <- unlist(lapply(e, function(fit) {
+      s <- NULL
+      if(isSingular(fit)){
+        s <- TRUE
+      }
+      return(s)
+    }))
     warnings <- unlist(lapply(e, function(fit) {
       warnings <- fit@optinfo$warnings
-      if(isSingular(fit)){
-        warnings <- c(warnings, 'singular')
-      }
       return(warnings)
     }))
   }
-  return(list(ab = within.indirect.effect, warnings = warnings))
+  return(list(ab = within.indirect.effect, warnings = warnings, singular = singulars))
 }
 #' permute_within
 #'

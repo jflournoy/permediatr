@@ -22,11 +22,12 @@
 #' @export
 #'
 #' @examples
-generate_slurm_file <- function(bash_out_dir, nreps, nperms, mc.cores, J = 100, n_j = 4, a = 0, b = 0, c_p = 0, theta_ab = .2, optimizer = "bobyqa", job_name = "permediatr", job_time = "2-00:00:00", job_mem = "5G", partition = "ncf_holy", email_address = NULL, save_dir = "./"){
+generate_slurm_file <- function(bash_out_dir, nreps, nperms, mc.cores, J = 100, n_j = 4, a = 0, b = 0, c_p = 0, theta_ab = .2, re.form = NULL, optimizer = "bobyqa", job_name = "permediatr", job_time = "2-00:00:00", job_mem = "5G", partition = "ncf_holy", email_address = NULL, save_dir = "./"){
 
   path_to_script <- system.file(file.path('bin', 'permediatr_simulation.R'), package = 'permediatr')
 
-  array_df <- expand.grid(a = a, b = b, c_p = c_p, theta_ab = theta_ab)
+  array_df <- expand.grid(a = a, b = b, c_p = c_p, theta_ab = theta_ab, re.form = re.form)
+  array_df <- array_df[array_df$a == 0 | array_df$b == 0, ]
   job_numbers <- as.numeric(rownames(array_df))-1
   job_array_range <- paste(range(job_numbers), collapse = '-')
   ndigits <- max(floor(log10(abs(job_numbers)))+1)
@@ -66,13 +67,14 @@ a=(', param_values[['a']],')
 b=(', param_values[['b']],')
 cp=(', param_values[['c_p']],')
 thetaab=(', param_values[['theta_ab']],')
+reform=(', param_values[['re.form']],')
 optimizer="', optimizer,'"
 dataout="', save_dir,'"
 name=(', name_values,')
 index=${SLURM_ARRAY_TASK_ID}
 permediatrpath=', path_to_script,'
 
-Rscript "${permediatrpath}" --nreps "${nreps}" --nperms "${nperms}" --mc.cores "${mccores}" --J "${J}" --n_j "${nj}" --a "${a[${index}]}" --b "${b[${index}]}" --c_p "${cp[${index}]}" --theta_ab "${thetaab[${index}]}" --optimizer "${optimizer}" "${dataout}" "${name[${index}]}"')
+Rscript "${permediatrpath}" --nreps "${nreps}" --nperms "${nperms}" --mc.cores "${mccores}" --J "${J}" --n_j "${nj}" --a "${a[${index}]}" --b "${b[${index}]}" --c_p "${cp[${index}]}" --theta_ab "${thetaab[${index}]}" --optimizer "${optimizer}" --reform "${reform[${index}]}" "${dataout}" "${name[${index}]}"')
 
   writeLines(bash_code, con = file.path(bash_out_dir, 'slurmjob.bash'))
 }

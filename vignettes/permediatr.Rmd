@@ -1,3 +1,21 @@
+```{r}
+permediatr::generate_slurm_file(bash_out_dir = '../inst/bin/', 
+                                nreps = 500, nperms = 2500, mc.cores = 24,
+                                J = 100, n_j = 10,
+                                a = c(0, .2, .8),
+                                b = c(0, .2, .8),
+                                c_p = c(0, .8),
+                                theta_ab = .2,
+                                re.form = c('NULL', 'NA'),
+                                optimizer = 'bobyqa',
+                                job_name = 'permediatr',
+                                job_time = '3-00:00:00',
+                                job_mem = '10G', 
+                                partition = 'ncf_holy', 
+                                email_address = 'john_flournoy@fas.harvard.edu', 
+                                save_dir = '/net/holynfs01/srv/export/mclaughlin/share_root/users/jflournoy/data')
+```
+
 The output from the simulations needs to be collected first from the csv output. Another aspect of the output is that each simulation gives the p-value of the indirect path as just the cumulative probability. We want to reject the null for any indirect path where that is either < .025 or > .975. I'll summarize the output to look at the error rate (any null rejection) for each subset of simulation input (a path, b path, and c_p path). There are three ways I could imagine getting a p-value from the permutation-generated confidence interval -- first, subtracting the mean of all permutations, to center the CI around 0, `p_ab_perm_mean_c`; second, centering that distribution around the model-estimated a*b path, `p_ab_perm_ab_c`; and third, taking the proportion of the CI that is below 0. In the final case, to keep the test two-sided, we reject the null when > .025 proportion of the tail is of the sign opposite the indirect effect estimate.
 
 ```{r}
@@ -27,7 +45,135 @@ ggplot(sim_results_summary_l, aes(x = a, y = value, group = interaction(b,c_p)))
   geom_hline(yintercept = .05, linetype = 'dotted') +
   geom_point(aes(shape = factor(c_p)), alpha = .5, size = 2) + 
   geom_line(aes(color = b)) +
-  scale_y_log10(breaks = c(.05, .5, 1)) +
+  scale_y_continuous(breaks = c(.05, .5, 1)) +
   facet_wrap(~variable) +
   theme_minimal()
+```
+
+
+```{r}
+library(permediatr)
+library(lme4)
+adf <- simulate_mediation_data(n_j = 10, a = .5)
+
+yfit <- lmer(y ~ cov.y + x_bc + m_bc + x_wc + m_wc + (1 + x_wc + m_wc | id),
+     data = adf, control = lmerControl(optimizer = 'bobyqa'))
+mfit <- lmer(m ~ cov.m + x_bc + x_wc + (1 + x_wc | id),
+     data = adf, control = lmerControl(optimizer = 'bobyqa'))
+
+summary(yfit)
+summary(mfit)
+
+mean(coef(yfit)$id[,'m_wc'])
+fixef(yfit)['m_wc']
+mean(coef(mfit)$id[,'x_wc'])
+fixef(mfit)['x_wc']
+mean(coef(yfit)$id[,'m_wc'])*mean(coef(mfit)$id[,'x_wc'])
+fixef(mfit)['x_wc']*fixef(yfit)['m_wc']
+mean(coef(yfit)$id[,'m_wc'] * coef(mfit)$id[,'x_wc'])
+
+indirect_within.lme4(adf, indices.y = NULL, indices.m = NULL, y.name = 'y', x.name = 'x_wc', m_b.name = 'm_wc', m_a.name = 'm', group.id = 'id', covariates.y = c('cov.y', 'x_bc', 'm_bc'), covariates.m = c('cov.m', 'x_bc'), optimizer = 'bobyqa')
+```
+
+```{r}
+attach(list(nreps = 1, nperms = 7*200, mc.cores = 7, J = 100, n_j = 10, a = 0, b = .5, c_p = 0, theta_ab = .2, optimizer = 'bobyqa'))
+
+message("\nRunning ", nreps, " simulations with the following parameters:
+permutations: ", nperms,"
+J: ", J,"
+n_j: ", n_j,"
+a: ", a,"
+b: ", b,"
+c_p: ", c_p,"
+theta_ab: ", theta_ab,"
+optimizer: ", optimizer)
+  #could make this slightly more efficient by splitting up reps differently.
+    message('Generating new data...')
+    adf <- simulate_mediation_data(J = J, n_j = n_j, a = a, b = b, c_p = c_p, theta_ab = theta_ab)
+    ab <- indirect_within.lme4(data = adf,
+                               indices.y = NULL,
+                               indices.m = NULL,
+                               y.name = 'y',
+                               x.name = 'x_wc',
+                               m_b.name = 'm_wc',
+                               m_a.name = 'm',
+                               group.id = 'id',
+                               covariates.y=c('cov.y', 'm_bc', 'x_bc'),
+                               covariates.m=c('cov.m', 'x_bc'),
+                               random.a=T,
+                               random.b=T,
+                               random.c_p=T, optimizer = optimizer)
+    message('Generating permutations...')
+    perms.y <- permute_within(n = nperms, data = adf, group.id = 'id', series = F)
+    perms.m <- permute_within(n = nperms, data = adf, group.id = 'id', series = F)
+    perms_list.y <- lapply(seq_len(nrow(perms.y)), function(i) perms.y[i,])
+    perms_list.m <- lapply(seq_len(nrow(perms.m)), function(i) perms.m[i,])
+    split_perms_list.y <- suppressWarnings(split(perms_list.y, 1:mc.cores))
+    split_perms_list.m <- suppressWarnings(split(perms_list.m, 1:mc.cores))
+    message('Evaluating ', nperms, ' permutations over ', mc.cores, ' processors...')
+    perm_set_time <- system.time({
+      ab_perms_NA <- parallel::mcmapply(function(perm_list.y, perm_list.m){
+        mapply(function(indices.y, indices.m){
+          ab <- indirect_within.lme4(data = adf,
+                                     indices.y = indices.y,
+                                     indices.m = indices.m,
+                                     y.name = 'y',
+                                     x.name = 'x_wc',
+                                     m_b.name = 'm_wc',
+                                     m_a.name = 'm',
+                                     group.id = 'id',
+                                     covariates.y=c('cov.y', 'm_bc', 'x_bc'),
+                                     covariates.m=c('cov.m', 'x_bc'),
+                                     random.a=T,
+                                     random.b=T,
+                                     random.c_p=T,
+                                     optimizer = optimizer,
+                                     re.form.y = NA, re.form.m = NA)
+        }, perm_list.y, perm_list.m, SIMPLIFY = FALSE)
+      }, split_perms_list.y, split_perms_list.m, SIMPLIFY = FALSE, mc.cores = mc.cores)
+    })
+    message('Parallel evaluation took: ', perm_set_time[['elapsed']], 's')
+    message('Evaluating ', nperms, ' permutations over ', mc.cores, ' processors...')
+    perm_set_time <- system.time({
+      ab_perms_NULL <- parallel::mcmapply(function(perm_list.y, perm_list.m){
+        mapply(function(indices.y, indices.m){
+          ab <- indirect_within.lme4(data = adf,
+                                     indices.y = indices.y,
+                                     indices.m = indices.m,
+                                     y.name = 'y',
+                                     x.name = 'x_wc',
+                                     m_b.name = 'm_wc',
+                                     m_a.name = 'm',
+                                     group.id = 'id',
+                                     covariates.y=c('cov.y', 'm_bc', 'x_bc'),
+                                     covariates.m=c('cov.m', 'x_bc'),
+                                     random.a=T,
+                                     random.b=T,
+                                     random.c_p=T,
+                                     optimizer = optimizer,
+                                     re.form.y = NULL, re.form.m = NULL)
+        }, perm_list.y, perm_list.m, SIMPLIFY = FALSE)
+      }, split_perms_list.y, split_perms_list.m, SIMPLIFY = FALSE, mc.cores = mc.cores)
+    })
+    ab_vec_NA <- unlist(lapply(unlist(ab_perms_NA, recursive = F), `[[`, 'ab'))
+    ab_vec_NULL <- unlist(lapply(unlist(ab_perms_NULL, recursive = F), `[[`, 'ab'))
+    maxmax <- max(c(abs(ab_vec_NA), abs(ab_vec_NULL)))
+    hist(ab_vec_NA, breaks = seq(-maxmax-.02, maxmax + .02, .005), xlim = c(-maxmax, maxmax)); abline(v = ab$ab)
+    hist(ab_vec_NULL, breaks = seq(-maxmax-.02, maxmax + 02, .005), xlim = c(-maxmax, maxmax)); abline(v = ab$ab)
+    hist(-ab_vec_NA, breaks = seq(-maxmax-.02, maxmax + .02, .005), xlim = c(-maxmax, maxmax)); abline(v = ab$ab)
+    hist(-ab_vec_NULL, breaks = seq(-maxmax-.02, maxmax + 02, .005), xlim = c(-maxmax, maxmax)); abline(v = ab$ab)
+    summary(ab_vec_NA)
+    sd(ab_vec_NA)
+    summary(ab_vec_NULL)
+    sd(ab_vec_NULL)
+    null_NA <- -(ab_vec_NA - ab$ab)
+    null_NULL <- -(ab_vec_NULL - ab$ab)
+    min_ab <- min(c(null_NA, null_NULL))
+    max_ab <- max(c(null_NA, null_NULL))
+    hist(null_NA, breaks = seq(min_ab-.02, max_ab + .02, .005), xlim = c(min_ab, max_ab)); abline(v = ab$ab)
+    hist(null_NULL, breaks = seq(min_ab-.02, max_ab + 02, .005), xlim = c(min_ab, max_ab)); abline(v = ab$ab)
+    ecdf(null_NA)(ab$ab)
+    ecdf(null_NULL)(ab$ab)
+    mean(sign(ab$ab)*ab_vec_NA < 0)
+    mean(sign(ab$ab)*ab_vec_NULL < 0)
 ```

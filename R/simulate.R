@@ -96,7 +96,7 @@ simulate_mediation_data <- function(J = 100, n_j = 4, a = 0, b = 0, c_p = 0, the
 #' @import pbapply
 #'
 #' @examples
-run_permutation_simulation <- function(nreps, nperms, mc.cores, J = 100, n_j = 4, a = 0, b = 0, c_p = 0, theta_ab = .2, optimizer = "bobyqa"){
+run_permutation_simulation <- function(nreps, nperms, mc.cores, J = 100, n_j = 4, a = 0, b = 0, c_p = 0, theta_ab = .2, optimizer = "bobyqa", re.form = NULL){
   message("\nRunning ", nreps, " simulations with the following parameters:
 permutations: ", nperms,"
 J: ", J,"
@@ -125,7 +125,7 @@ optimizer: ", optimizer)
                                covariates.m=c('cov.m', 'x_bc'),
                                random.a=T,
                                random.b=T,
-                               random.c_p=T, optimizer = optimizer)
+                               random.c_p=T, optimizer = optimizer, re.form.y = re.form, re.form.m = re.form)
     message('Generating permutations...')
     perms.y <- permute_within(n = nperms, data = adf, group.id = 'id', series = F)
     perms.m <- permute_within(n = nperms, data = adf, group.id = 'id', series = F)
@@ -150,7 +150,7 @@ optimizer: ", optimizer)
                                      random.a=T,
                                      random.b=T,
                                      random.c_p=T,
-                                     optimizer = optimizer)
+                                     optimizer = optimizer, re.form.y = re.form, re.form.m = re.form)
         }, perm_list.y, perm_list.m, SIMPLIFY = FALSE)
       }, split_perms_list.y, split_perms_list.m, SIMPLIFY = FALSE, mc.cores = mc.cores)
     })
@@ -159,31 +159,49 @@ optimizer: ", optimizer)
       awarning <- aperm[['warnings']]
       is.null(awarning)
     }))
+    no_singular <- unlist(lapply(unlist(ab_perms, recursive = F), function(aperm){
+      s <- aperm[['singular']]
+      is.null(s)
+    }))
     ab_vec <- unlist(lapply(unlist(ab_perms, recursive = F), `[[`, 'ab'))
     ab_vec <- ab_vec[no_convwarnings]
-    ab_vec_centered_mean <- ab_vec - mean(ab_vec)
-    ab_vec_centered_ab <- ab_vec - ab$ab
-    p_ab_perm_mean_c <- NA
-    p_ab_perm_ab_c <- NA
-    p_opsign_ci <- NA
-    e_mean_c <- try({p_ab_perm_mean_c <- ecdf(ab_vec_centered_mean)(ab$ab)})
-    e_ab_c <- try({p_ab_perm_ab_c <- ecdf(ab_vec_centered_ab)(ab$ab)})
-    e_ci <- try({p_opsign_ci <- mean(sign(ab$ab)*ab_vec < 0)})
-    e_list <- list(e_mean_c = e_mean_c, e_ab_c = e_ab_c, e_ci = e_ci)
-    lapply(1:length(e_list), function(i){
-        if(inherits(e_list[[i]], 'try-error')){
-            warning('Error in computing p value: ', names(e_list)[[i]])
-        }
+
+    dists <- list(c_ab = ab_vec - ab$ab,
+                  c_mean = ab_vec - mean(ab_vec),
+                  neg_c_ab = -(ab_vec - ab$ab),
+                  neg_c_mean = -(ab_vec - mean(ab_vec)))
+    p_dists <- lapply(1:length(dists), function(i){
+      p <- try(ecdf(dists[[i]])(ab$ab))
+      if(inherits(p, 'try-error')){
+        warning(p)
+        warning('Error in computing p value: ', names(dists)[[i]])
+        p <- NA
+      }
+      return(p)
     })
+    names(p_dists) <- paste0('p_', names(dists))
+
+    p_opsign_ci <- try(mean(sign(ab$ab)*ab_vec < 0))
+    if(inherits(p_opsign_ci, 'try-error')){
+      warning(p_opsign_ci)
+      warning('Error in computing p value: p_opsign_ci')
+      p_opsign_ci <- NA
+    }
+
     n_conv_warn <- sum(!no_convwarnings)
+    n_singular <- sum(!no_singular)
     message('Finished this replication. Number of convergence warnings: ', n_conv_warn, '\n')
-    results_list <- list(p_ab_perm_mean_c = p_ab_perm_mean_c,
-         p_ab_perm_ab_c = p_ab_perm_ab_c,
+    message('Finished this replication. Number of singular convergence: ', n_singular, '\n')
+    results_list <- c(
+      p_dists,
+      list(
          p_opsign_ci = p_opsign_ci,
          n_conv_warn = n_conv_warn,
+         n_singular = n_singular,
          ab = ab$ab,
          ab_warnings = ab$warnings,
-         mean_ab_perm = mean(ab_vec))
+         ab_singular = ab$singular,
+         mean_ab_perm = mean(ab_vec)))
     return(results_list)
   })
   return(reps)
