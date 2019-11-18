@@ -28,7 +28,7 @@ generate_slurm_file <- function(bash_out_dir, nreps, nperms, mc.cores, J = 100, 
 
   array_df <- expand.grid(a = a, b = b, c_p = c_p, theta_ab = theta_ab, re.form = re.form)
   array_df <- array_df[array_df$a == 0 | array_df$b == 0, ]
-  job_numbers <- as.numeric(rownames(array_df))-1
+  job_numbers <- 1:dim(array_df)[1]-1
   job_array_range <- paste(range(job_numbers), collapse = '-')
   ndigits <- max(floor(log10(abs(job_numbers)))+1)
   sim_names <- sprintf(paste0('pmjob_%0', ndigits,'d'), job_numbers)
