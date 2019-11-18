@@ -13,7 +13,7 @@
 #SBATCH --mail-type=ALL
 # ------------------------------------------
 #
-#usage: sbatch --array=0-33 ../inst/bin//slurmjob.bash
+#usage: sbatch --array=0-19 ../inst/bin//slurmjob.bash
 
 nreps=500
 nperms=2500
@@ -27,7 +27,7 @@ thetaab=(0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2 0.2
 reform=(NULL NULL NULL NULL NULL NULL NULL NULL NULL NULL NA NA NA NA NA NA NA NA NA NA)
 optimizer="bobyqa"
 dataout="/net/holynfs01/srv/export/mclaughlin/share_root/users/jflournoy/data"
-name=(pmjob_00 pmjob_01 pmjob_02 pmjob_03 pmjob_06 pmjob_09 pmjob_10 pmjob_11 pmjob_12 pmjob_15 pmjob_18 pmjob_19 pmjob_20 pmjob_21 pmjob_24 pmjob_27 pmjob_28 pmjob_29 pmjob_30 pmjob_33)
+name=(pmjob_00 pmjob_01 pmjob_02 pmjob_03 pmjob_04 pmjob_05 pmjob_06 pmjob_07 pmjob_08 pmjob_09 pmjob_10 pmjob_11 pmjob_12 pmjob_13 pmjob_14 pmjob_15 pmjob_16 pmjob_17 pmjob_18 pmjob_19)
 index=${SLURM_ARRAY_TASK_ID}
 permediatrpath=/home/jflournoy/Rlibs/permediatr/bin/permediatr_simulation.R
 
