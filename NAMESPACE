@@ -3,6 +3,8 @@
 export(generate_slurm_file)
 export(getmaxfun)
 export(indirect_within.lme4)
+export(permute_between)
+export(permute_between_within)
 export(permute_within)
 export(run_permutation_simulation)
 export(simulate_mediation_data)

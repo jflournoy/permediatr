@@ -34,7 +34,8 @@ parser$add_argument('--theta_ab', type="double",
                     required = TRUE)
 parser$add_argument('--optimizer', type="character", help='Name of the optimizer to use in the lme4::lmer calls.', default = 'bobyqa')
 parser$add_argument('--reform', type="character", help='Formula specifying random effects structure for prediction. NULL and NA have special meaning (see lme4 documentation).', default = 'NULL')
-args <- parser$parse_args()
+args <- parser$parse_args('--permtype', type="character", help='How to permute values. Valid options are "between", ".', default = 'NULL')
+parser$add_argument()
 
 if(args$reform == 'NULL'){
   re.form <- NULL

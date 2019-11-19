@@ -7,7 +7,8 @@
 indirect_within.lme4(data, indices.y = NULL, indices.m = NULL, y.name,
   x.name, m_b.name, m_a.name, group.id, covariates.y = NULL,
   covariates.m = NULL, random.a = T, random.b = T, random.c_p = T,
-  optimizer = "nloptwrap", lmeropts = list())
+  optimizer = "nloptwrap", lmeropts = list(), re.form.y = NULL,
+  re.form.m = NULL)
 }
 \arguments{
 \item{data}{Data frame. Should not have missing values.}
