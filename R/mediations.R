@@ -128,8 +128,8 @@ indirect_within.lme4 <- function(data, indices.y = NULL, indices.m = NULL, y.nam
 #'
 #' @examples
 permute_within <- function(n, data, group.id, series = F){
-  blocks <- as.data.frame(data)[, group.id]
   requireNamespace('permute', quietly = TRUE)
+  blocks <- as.data.frame(data)[, group.id]
   if(series){
     type <- 'series'
   } else{
@@ -137,6 +137,52 @@ permute_within <- function(n, data, group.id, series = F){
   }
   n_obs <- dim(data)[1]
   perm_control <- permute::how(nperm = n, within = permute::Within(type = type), blocks = blocks)
+  p <- permute::shuffleSet(n = n_obs, control = perm_control)
+  return(p)
+}
+
+#' permute_between
+#'
+#' @param n
+#' @param data
+#' @param group.id
+#'
+#' @return
+#' @export
+#' @import permute
+#'
+#' @examples
+permute_between <- function(n, data, group.id){
+  requireNamespace('permute', quietly = TRUE)
+  strata <- as.data.frame(data)[, group.id]
+  n_obs <- dim(data)[1]
+  perm_control <- permute::how(nperm = n, within = permute::Within(type = 'none'), plots = permute::Plots(strata = strata, type = 'free'), blocks = NULL)
+  p <- permute::shuffleSet(n = n_obs, control = perm_control)
+  return(p)
+}
+
+#' permute_between_within
+#'
+#' @param n
+#' @param data
+#' @param group.id
+#' @param series
+#'
+#' @return
+#' @export
+#' @import permute
+#'
+#' @examples
+permute_between_within <- function(n, data, group.id, series = F){
+  requireNamespace('permute', quietly = TRUE)
+  strata <- as.data.frame(data)[, group.id]
+  if(series){
+    type <- 'series'
+  } else{
+    type <- 'free'
+  }
+  n_obs <- dim(data)[1]
+  perm_control <- permute::how(nperm = n, within = permute::Within(type = type), plots = permute::Plots(strata = strata, type = 'free'), blocks = NULL)
   p <- permute::shuffleSet(n = n_obs, control = perm_control)
   return(p)
 }
