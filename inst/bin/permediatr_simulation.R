@@ -34,8 +34,8 @@ parser$add_argument('--theta_ab', type="double",
                     required = TRUE)
 parser$add_argument('--optimizer', type="character", help='Name of the optimizer to use in the lme4::lmer calls.', default = 'bobyqa')
 parser$add_argument('--reform', type="character", help='Formula specifying random effects structure for prediction. NULL and NA have special meaning (see lme4 documentation).', default = 'NULL')
-args <- parser$parse_args('--permtype', type="character", help='How to permute values. Valid options are "between", ".', default = 'NULL')
-parser$add_argument()
+parser$add_argument('--permtype', type="character", help='How to permute values. Valid options are "between", "within" and "between_within". "within" will shuffle values within levels of the grouping factor. "between" shuffles strata of observations defined by the grouping factor. "between_within" combines the two (note that observations are not mixed across strata).', default = 'within')
+args <- parser$parse_args()
 
 if(args$reform == 'NULL'){
   re.form <- NULL
@@ -49,6 +49,10 @@ if(inherits(re.form, 'try-error')){
   stop('Problem with --reform value: ', args$reform)
 }
 
+if(!args$permtype %in% c('between', 'within', 'between_within')){
+  stop('--permtype specified incorrectly. Should be "between", "within" or "between_within", not: ', args$permtype)
+}
+
 results <- run_permutation_simulation(nreps = as.numeric(args$nreps),
                                       nperms = args$nperms,
                                       mc.cores = args$mc.cores,
@@ -59,7 +63,9 @@ results <- run_permutation_simulation(nreps = as.numeric(args$nreps),
                                       c_p = args$c_p,
                                       theta_ab = args$theta_ab,
                                       optimizer = args$optimizer,
-                                      re.form = re.form)
+                                      re.form = re.form,
+                                      permtype = args$permtype)
+
 rds_file <- file.path(args$save_dir, paste0(args$simulation_name, '.rds'))
 message('Saving results to RDS file: ', rds_file)
 saveRDS(results, file = rds_file)
@@ -82,5 +88,6 @@ args <- parser$parse_args(
   '--c_p', '0',
   '--theta_ab', '.2',
   '--optimizer', 'bobyqa',
-  '--reform', 'NULL')
+  '--reform', 'NULL',
+  '--permtype', 'between_within')
 )

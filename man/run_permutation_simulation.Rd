@@ -6,7 +6,7 @@
 \usage{
 run_permutation_simulation(nreps, nperms, mc.cores, J = 100, n_j = 4,
   a = 0, b = 0, c_p = 0, theta_ab = 0.2, optimizer = "bobyqa",
-  re.form = NULL)
+  re.form = NULL, permtype = "within")
 }
 \arguments{
 \item{optimizer}{}

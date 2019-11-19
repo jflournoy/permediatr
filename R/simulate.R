@@ -96,7 +96,7 @@ simulate_mediation_data <- function(J = 100, n_j = 4, a = 0, b = 0, c_p = 0, the
 #' @import pbapply
 #'
 #' @examples
-run_permutation_simulation <- function(nreps, nperms, mc.cores, J = 100, n_j = 4, a = 0, b = 0, c_p = 0, theta_ab = .2, optimizer = "bobyqa", re.form = NULL){
+run_permutation_simulation <- function(nreps, nperms, mc.cores, J = 100, n_j = 4, a = 0, b = 0, c_p = 0, theta_ab = .2, optimizer = "bobyqa", re.form = NULL, permtype = 'within'){
   message("\nRunning ", nreps, " simulations with the following parameters:
 permutations: ", nperms,"
 J: ", J,"
@@ -105,7 +105,12 @@ a: ", a,"
 b: ", b,"
 c_p: ", c_p,"
 theta_ab: ", theta_ab,"
-optimizer: ", optimizer)
+optimizer: ", optimizer,"
+re.form: ", re.form,"
+permtype: ", permtype)
+
+  permute_fun <- get(paste0('permute_', permtype), envir = as.environment('package:permediatr'))
+
   #could make this slightly more efficient by splitting up reps differently.
   nreps_digits <- 1 + floor(log10(nreps))
   pbapply::pboptions(type = 'timer', char = '+', style = 3)
