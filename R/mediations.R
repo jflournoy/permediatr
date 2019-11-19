@@ -146,13 +146,14 @@ permute_within <- function(n, data, group.id, series = F){
 #' @param n
 #' @param data
 #' @param group.id
+#' @param series
 #'
 #' @return
 #' @export
 #' @import permute
 #'
 #' @examples
-permute_between <- function(n, data, group.id){
+permute_between <- function(n, data, group.id, series = F){
   requireNamespace('permute', quietly = TRUE)
   strata <- as.data.frame(data)[, group.id]
   n_obs <- dim(data)[1]

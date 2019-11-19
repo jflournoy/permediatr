@@ -4,10 +4,10 @@
 \alias{permute_between}
 \title{permute_between}
 \usage{
-permute_between(n, data, group.id)
+permute_between(n, data, group.id, series = F)
 }
 \arguments{
-\item{group.id}{}
+\item{series}{}
 }
 \description{
 permute_between
