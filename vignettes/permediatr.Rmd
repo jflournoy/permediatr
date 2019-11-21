@@ -1,4 +1,15 @@
-```{r}
+---
+title: "Error rate of permutation method"
+author: "John Flournoy"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_document
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+---
+
+```{r eval = FALSE, echo = FALSE}
 permediatr::generate_slurm_file(bash_out_dir = '../inst/bin/', 
                                 nreps = 500, nperms = 2500, mc.cores = 24,
                                 J = 100, n_j = 10,
@@ -18,40 +29,72 @@ permediatr::generate_slurm_file(bash_out_dir = '../inst/bin/',
 
 The output from the simulations needs to be collected first from the csv output. Another aspect of the output is that each simulation gives the p-value of the indirect path as just the cumulative probability. We want to reject the null for any indirect path where that is either < .025 or > .975. I'll summarize the output to look at the error rate (any null rejection) for each subset of simulation input (a path, b path, and c_p path). There are three ways I could imagine getting a p-value from the permutation-generated confidence interval -- first, subtracting the mean of all permutations, to center the CI around 0, `p_ab_perm_mean_c`; second, centering that distribution around the model-estimated a*b path, `p_ab_perm_ab_c`; and third, taking the proportion of the CI that is below 0. In the final case, to keep the test two-sided, we reject the null when > .025 proportion of the tail is of the sign opposite the indirect effect estimate.
 
-```{r}
+```{r fig.width = 7, fig.height = 5}
+library(permediatr)
 library(data.table)
 library(ggplot2)
 file_list <- dir(system.file('csv', package = 'permediatr'), 
                  pattern = '*csv', full.names = TRUE)
 
-sim_results <- data.table::rbindlist(lapply(file_list, data.table::fread))
+sim_results <- data.table::rbindlist(lapply(file_list, data.table::fread), fill = TRUE)
+
+set(sim_results, i = which(is.na(sim_results[['permtype']])), j = 'permtype', 'within')
 
 proportion_fp <- function(p) {
   return(mean(p < .025) + mean(p > .975))
 }
 
+sim_results[, a_or_b_size := pmax(a,b)]
+
 sim_results_summary <- 
-  sim_results[, .(p_ab_perm_mean_c = proportion_fp(p_ab_perm_mean_c),
-                  p_ab_perm_ab_c = proportion_fp(p_ab_perm_ab_c),
+  sim_results[, .(p_c_ab = proportion_fp(p_c_ab),
+                  p_c_mean = proportion_fp(p_c_mean),
+                  p_neg_c_ab = proportion_fp(p_neg_c_ab),
+                  p_neg_c_mean = proportion_fp(p_neg_c_mean),
                   p_opsign_ci = mean(p_opsign_ci < .025)), 
-              by = .(a, b, c_p)]
-sim_results_summary_l <- data.table::melt(sim_results_summary, id.vars = c('a', 'b', 'c_p'),
-                 measure.vars = c('p_ab_perm_mean_c', 'p_ab_perm_ab_c', 'p_opsign_ci'))
-sim_results_summary_l[, biggest := pmax(a,b)]
+              by = .(a_or_b_size, c_p, reform, permtype)]
+sim_results_summary_l <- data.table::melt(sim_results_summary, id.vars = c('a_or_b_size', 'c_p', 'reform', 'permtype'),
+                 measure.vars = c('p_c_ab', 'p_c_mean', 'p_neg_c_ab', 'p_neg_c_mean', 'p_opsign_ci'), value.name = 'error_rate')
 ```
 
 ```{r}
-ggplot(sim_results_summary_l, aes(x = a, y = value, group = interaction(b,c_p))) +
+ggplot(sim_results_summary_l[reform == 'NULL' & permtype == 'within'], 
+       aes(x = a_or_b_size, y = error_rate, group = c_p)) +
   geom_hline(yintercept = .05, linetype = 'dotted') +
   geom_point(aes(shape = factor(c_p)), alpha = .5, size = 2) + 
-  geom_line(aes(color = b)) +
+  geom_line() +
   scale_y_continuous(breaks = c(.05, .5, 1)) +
   facet_wrap(~variable) +
-  theme_minimal()
+  theme_minimal() +
+  labs(title = 'reform = NULL, permutations = within')
+
+ggplot(sim_results_summary_l[is.na(reform) & permtype == 'within'], 
+       aes(x = a_or_b_size, y = error_rate, group = c_p)) +
+  geom_hline(yintercept = .05, linetype = 'dotted') +
+  geom_point(aes(shape = factor(c_p)), alpha = .5, size = 2) + 
+  geom_line() +
+  scale_y_continuous(breaks = c(.05, .5, 1)) +
+  facet_wrap(~variable) +
+  theme_minimal() +
+  labs(title = 'reform = NA, permutations = within')
+
+ggplot(sim_results_summary_l[is.na(reform) & permtype == 'between_within'], 
+       aes(x = a_or_b_size, y = error_rate, group = c_p)) +
+  geom_hline(yintercept = .05, linetype = 'dotted') +
+  geom_point(aes(shape = factor(c_p)), alpha = .5, size = 2) + 
+  geom_line() +
+  scale_y_continuous(breaks = c(.05, .5, 1)) +
+  facet_wrap(~variable) +
+  theme_minimal() +
+  labs(title = 'reform = NA, permutations = between_within')
+```
+
+```{r}
+knitr::kable(sim_results_summary_l)
 ```
 
 
-```{r}
+```{r eval = FALSE, echo = FALSE}
 library(permediatr)
 library(lme4)
 adf <- simulate_mediation_data(n_j = 10, a = .5)
@@ -75,7 +118,7 @@ mean(coef(yfit)$id[,'m_wc'] * coef(mfit)$id[,'x_wc'])
 indirect_within.lme4(adf, indices.y = NULL, indices.m = NULL, y.name = 'y', x.name = 'x_wc', m_b.name = 'm_wc', m_a.name = 'm', group.id = 'id', covariates.y = c('cov.y', 'x_bc', 'm_bc'), covariates.m = c('cov.m', 'x_bc'), optimizer = 'bobyqa')
 ```
 
-```{r}
+```{r eval = FALSE, echo = FALSE}
 attach(list(nreps = 1, nperms = 7*200, mc.cores = 7, J = 100, n_j = 10, a = 0, b = .5, c_p = 0, theta_ab = .2, optimizer = 'bobyqa'))
 
 message("\nRunning ", nreps, " simulations with the following parameters:
