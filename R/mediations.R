@@ -1,3 +1,88 @@
+#' permediatrMod
+#'
+#' @param data
+#' @param y.name
+#' @param x.name
+#' @param m_b.name
+#' @param m_a.name
+#' @param group.id
+#' @param covariates.y
+#' @param covariates.m
+#' @param random.a
+#' @param random.b
+#' @param random.c_p
+#' @param optimizer
+#' @param lmeropts
+#' @param re.form.y
+#' @param re.form.m
+#'
+#' @return
+#' @export
+#'
+#' @examples
+permediatrMod <- function(data, y.name, x.name, m_b.name, m_a.name, group.id, covariates.y=NULL, covariates.m=NULL, random.a=T, random.b=T, random.c_p=T, optimizer = "nloptwrap", lmeropts = list()){
+  requireNamespace('lme4', quietly = TRUE)
+  re_terms.y <- c('1', c(m_b.name, x.name)[c(random.b, random.c_p)])
+  re_terms.m <- c('1', c(x.name)[random.a])
+  re_part.y <- paste0('(', paste(re_terms.y, collapse = ' + '), ' | ', group.id, ')')
+  re_part.m <- paste0('(', paste(re_terms.m, collapse = ' + '), ' | ', group.id, ')')
+  form.y <- as.formula(paste0(y.name, ' ~ 1 + ',
+                              paste(covariates.y, collapse = ' + '),
+                              ' + ', m_b.name, ' + ', x.name,
+                              ' + ', re_part.y))
+  form.m <- as.formula(paste0(m_a.name, ' ~ 1 + ',
+                              paste(covariates.m, collapse = ' + '),
+                              ' + ', x.name,
+                              ' + ', re_part.m))
+  maxfun <- permediatr::getmaxfun(form.y, data)
+  lmeropts <- modifyList(list(na.action='na.fail',
+                              REML=F,
+                              control = lme4::lmerControl(optimizer = optimizer, optCtrl = list(maxfun = maxfun))),
+                         lmeropts)
+  e <- try({
+    model.y <- do.call(lme4::lmer,
+                       c(list(formula = form.y,
+                              data = data),
+                         lmeropts))
+
+    model.m <- do.call(lme4::lmer,
+                       c(list(formula = form.m,
+                              data = data),
+                         lmeropts))
+    list(model.y = model.y,
+         model.m = model.m,
+         lmeropts = lmeropts,
+         data = data,
+         parspec = c(y.name = y.name,
+                     x.name = x.name,
+                     m_b.name = m_b.name,
+                     m_a.name = m_a.name,
+                     group.id = group.id,
+                     covariates.y = covariates.y,
+                     covariates.m = covariates.m,
+                     random.a = random.a,
+                     random.b = random.b,
+                     random.c_p = random.c_p,
+                     optimizer = optimizer,
+                     re.form.y = re.form.y,
+                     re.form.m = re.form.m))
+  })
+  attr(e,'class') <- 'permediatrMod'
+  return(e)
+}
+
+#' is.permediatrMod
+#'
+#' @param x
+#'
+#' @return
+#' @export
+#'
+#' @examples
+is.permediatrMod <- function(x) {
+  inherits(x, 'permediatrMod')
+}
+
 #' indirect_within.lme4
 #'
 #' Variables should be centered appropriately (i.e., within-person)
@@ -19,47 +104,37 @@
 #' @return indirect and total effect.
 #' @import lme4
 #' @export
-indirect_within.lme4 <- function(data, indices.y = NULL, indices.m = NULL, y.name, x.name, m_b.name, m_a.name, group.id, covariates.y=NULL, covariates.m=NULL, random.a=T, random.b=T, random.c_p=T, optimizer = "nloptwrap", lmeropts = list(), re.form.y = NULL, re.form.m = NULL) {
+indirect_within.lme4 <- function(x, indices.y = NULL, indices.m = NULL, re.form.y = NULL, re.form.m = NULL, ...) {
   requireNamespace('lme4', quietly = TRUE)
-  re_terms.y <- c('1', c(m_b.name, x.name)[c(random.b, random.c_p)])
-  re_terms.m <- c('1', c(x.name)[random.a])
-  re_part.y <- paste0('(', paste(re_terms.y, collapse = ' + '), ' | ', group.id, ')')
-  re_part.m <- paste0('(', paste(re_terms.m, collapse = ' + '), ' | ', group.id, ')')
-  form.y <- as.formula(paste0(y.name, ' ~ 1 + ',
-                              paste(covariates.y, collapse = ' + '),
-                              ' + ', m_b.name, ' + ', x.name,
-                              ' + ', re_part.y))
-  form.m <- as.formula(paste0(m_a.name, ' ~ 1 + ',
-                              paste(covariates.m, collapse = ' + '),
-                              ' + ', x.name,
-                              ' + ', re_part.m))
+
+  if(!permediatr::is.permediatrMod(x)){
+    ab_mod <- permediatr::permediatrMod(data = x, ...)
+  } else {
+    ab_mod <- x
+  }
+
+  data <- ab_mod$data
+  group.id <- ab_mod$parspec[['group.id']]
+  x.name <- ab_mod$parspec[['x.name']]
+  m_b.name <- ab_mod$parspec[['m_b.name']]
+
+  form.y <- formula(ab_mod$model.y)
+  form.m <- formula(ab_mod$model.m)
+
   starFormula.y <- update(form.y, as.formula(paste0('y_star ~ .')))
   starFormula.m <- update(form.m, as.formula(paste0('m_star ~ .')))
-  maxfun <- permediatr::getmaxfun(form.y, data)
-  lmeropts <- modifyList(list(na.action='na.fail',
-                              REML=F,
-                              control = lme4::lmerControl(optimizer = optimizer, optCtrl = list(maxfun = maxfun))),
-                         lmeropts)
+
   if(is.null(indices.y) && is.null(indices.m)){
     #this is not a permutation
     e <- try({
-      model.y <- do.call(lme4::lmer,
-                         c(list(formula = form.y,
-                              data = data),
-                           lmeropts))
+      model.y <- ab_mod$model.y
 
-      model.m <- do.call(lme4::lmer,
-                         c(list(formula = form.m,
-                              data = data),
-                           lmeropts))
+      model.m <- ab_mod$model.m
       list(model.y, model.m)
     })
   } else if(!is.null(indices.y) && !is.null(indices.m)){
     e <- try({
-      residsModel.y <- do.call(lme4::lmer,
-                               c(list(formula = form.y,
-                                    data = data),
-                                 lmeropts))
+      residsModel.y <- ab_mod$model.y
       Zy <- predict(residsModel.y, re.form = re.form.y)
       epsilon_z.y <- residsModel.y@frame$y - Zy
       P_j.epsilon_z.y <- epsilon_z.y[indices.y]
@@ -68,10 +143,7 @@ indirect_within.lme4 <- function(data, indices.y = NULL, indices.m = NULL, y.nam
                          c(list(formula = starFormula.y,
                               data = data),
                            lmeropts))
-      residsModel.m <- do.call(lme4::lmer,
-                               c(list(formula = form.m,
-                                    data = data),
-                                 lmeropts))
+      residsModel.m <- ab_mod$model.m
       Zm <- predict(residsModel.m, re.form = re.form.m)
       epsilon_z.m <- residsModel.m@frame$m - Zm
       P_j.epsilon_z.m <- epsilon_z.m[indices.m]
@@ -88,6 +160,7 @@ indirect_within.lme4 <- function(data, indices.y = NULL, indices.m = NULL, y.nam
   if(inherits(e, 'try-error')){
     within.indirect.effect <- NA
     warnings <- NULL
+    singulars <- NULL
   } else {
     if(random.a==T){
       a <- coef(model.m)[[group.id]][[x.name]]

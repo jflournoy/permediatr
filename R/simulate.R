@@ -211,3 +211,138 @@ permtype: ", permtype)
   })
   return(reps)
 }
+
+#' run_bootstrap_simulation
+#'
+#' @param nreps
+#' @param nperms
+#' @param mc.cores
+#' @param J
+#' @param n_j
+#' @param a
+#' @param b
+#' @param c_p
+#' @param theta_ab
+#' @param optimizer
+#' @param re.form
+#' @param permtype
+#'
+#' @return
+#' @export
+#'
+#' @examples
+run_bootstrap_simulation <- function(nreps, nperms, mc.cores, J = 100, n_j = 4, a = 0, b = 0, c_p = 0, theta_ab = .2, optimizer = "bobyqa", re.form = NULL, permtype = 'within'){
+  message("\nRunning ", nreps, " simulations with the following parameters:
+permutations: ", nperms,"
+J: ", J,"
+n_j: ", n_j,"
+a: ", a,"
+b: ", b,"
+c_p: ", c_p,"
+theta_ab: ", theta_ab,"
+optimizer: ", optimizer,"
+re.form: ", re.form,"
+permtype: ", permtype)
+
+  permute_fun <- get(paste0('permute_', permtype), envir = as.environment('package:permediatr'))
+
+  #could make this slightly more efficient by splitting up reps differently.
+  nreps_digits <- 1 + floor(log10(nreps))
+  pbapply::pboptions(type = 'timer', char = '+', style = 3)
+  reps <- pbapply::pblapply(1:nreps, function (i) {
+    message(sprintf(paste0('\nReplication % ', nreps_digits, 'd out of %d'), i, nreps))
+    message('Generating new data...')
+    adf <- simulate_mediation_data(J = J, n_j = n_j, a = a, b = b, c_p = c_p, theta_ab = theta_ab)
+    ab <- indirect_within.lme4(data = adf,
+                               indices.y = NULL,
+                               indices.m = NULL,
+                               y.name = 'y',
+                               x.name = 'x_wc',
+                               m_b.name = 'm_wc',
+                               m_a.name = 'm',
+                               group.id = 'id',
+                               covariates.y=c('cov.y', 'm_bc', 'x_bc'),
+                               covariates.m=c('cov.m', 'x_bc'),
+                               random.a=T,
+                               random.b=T,
+                               random.c_p=T, optimizer = optimizer, re.form.y = re.form, re.form.m = re.form)
+    message('Generating permutations...')
+    perms.y <- permute_fun(n = nperms, data = adf, group.id = 'id', series = F)
+    perms.m <- permute_fun(n = nperms, data = adf, group.id = 'id', series = F)
+    perms_list.y <- lapply(seq_len(nrow(perms.y)), function(i) perms.y[i,])
+    perms_list.m <- lapply(seq_len(nrow(perms.m)), function(i) perms.m[i,])
+    split_perms_list.y <- suppressWarnings(split(perms_list.y, 1:mc.cores))
+    split_perms_list.m <- suppressWarnings(split(perms_list.m, 1:mc.cores))
+    message('Evaluating ', nperms, ' permutations over ', mc.cores, ' processors...')
+    perm_set_time <- system.time({
+      ab_perms <- parallel::mcmapply(function(perm_list.y, perm_list.m){
+        mapply(function(indices.y, indices.m){
+          ab <- indirect_within.lme4(data = adf,
+                                     indices.y = indices.y,
+                                     indices.m = indices.m,
+                                     y.name = 'y',
+                                     x.name = 'x_wc',
+                                     m_b.name = 'm_wc',
+                                     m_a.name = 'm',
+                                     group.id = 'id',
+                                     covariates.y=c('cov.y', 'm_bc', 'x_bc'),
+                                     covariates.m=c('cov.m', 'x_bc'),
+                                     random.a=T,
+                                     random.b=T,
+                                     random.c_p=T,
+                                     optimizer = optimizer, re.form.y = re.form, re.form.m = re.form)
+        }, perm_list.y, perm_list.m, SIMPLIFY = FALSE)
+      }, split_perms_list.y, split_perms_list.m, SIMPLIFY = FALSE, mc.cores = mc.cores)
+    })
+    message('Parallel evaluitation took: ', perm_set_time[['elapsed']], 's')
+    no_convwarnings <- unlist(lapply(unlist(ab_perms, recursive = F), function(aperm){
+      awarning <- aperm[['warnings']]
+      is.null(awarning)
+    }))
+    no_singular <- unlist(lapply(unlist(ab_perms, recursive = F), function(aperm){
+      s <- aperm[['singular']]
+      is.null(s)
+    }))
+    ab_vec <- unlist(lapply(unlist(ab_perms, recursive = F), `[[`, 'ab'))
+    ab_vec <- ab_vec[no_convwarnings]
+
+    dists <- list(c_ab = ab_vec - ab$ab,
+                  c_mean = ab_vec - mean(ab_vec),
+                  neg_c_ab = -(ab_vec - ab$ab),
+                  neg_c_mean = -(ab_vec - mean(ab_vec)))
+    p_dists <- lapply(1:length(dists), function(i){
+      p <- try(ecdf(dists[[i]])(ab$ab))
+      if(inherits(p, 'try-error')){
+        warning(p)
+        warning('Error in computing p value: ', names(dists)[[i]])
+        p <- NA
+      }
+      return(p)
+    })
+    names(p_dists) <- paste0('p_', names(dists))
+
+    p_opsign_ci <- try(mean(sign(ab$ab)*ab_vec < 0))
+    if(inherits(p_opsign_ci, 'try-error')){
+      warning(p_opsign_ci)
+      warning('Error in computing p value: p_opsign_ci')
+      p_opsign_ci <- NA
+    }
+
+    n_conv_warn <- sum(!no_convwarnings)
+    n_singular <- sum(!no_singular)
+    message('Finished this replication. Number of convergence warnings: ', n_conv_warn, '\n')
+    message('Finished this replication. Number of singular convergence: ', n_singular, '\n')
+    results_list <- c(
+      p_dists,
+      list(
+        p_opsign_ci = p_opsign_ci,
+        n_conv_warn = n_conv_warn,
+        n_singular = n_singular,
+        ab = ab$ab,
+        ab_warnings = ab$warnings,
+        ab_singular = ab$singular,
+        mean_ab_perm = mean(ab_vec)))
+    return(results_list)
+  })
+  return(reps)
+}
