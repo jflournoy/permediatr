@@ -119,7 +119,8 @@ indirect_within.lme4(adf, indices.y = NULL, indices.m = NULL, y.name = 'y', x.na
 ```
 
 ```{r eval = FALSE, echo = FALSE}
-attach(list(nreps = 1, nperms = 7*200, mc.cores = 7, J = 100, n_j = 10, a = 0, b = .5, c_p = 0, theta_ab = .2, optimizer = 'bobyqa'))
+library(permediatr)
+attach(list(nreps = 1, nperms = 500, mc.cores = 7, J = 100, n_j = 10, a = 0, b = .5, c_p = 0, theta_ab = .2, optimizer = 'bobyqa'))
 
 message("\nRunning ", nreps, " simulations with the following parameters:
 permutations: ", nperms,"
@@ -133,19 +134,18 @@ optimizer: ", optimizer)
   #could make this slightly more efficient by splitting up reps differently.
     message('Generating new data...')
     adf <- simulate_mediation_data(J = J, n_j = n_j, a = a, b = b, c_p = c_p, theta_ab = theta_ab)
-    ab <- indirect_within.lme4(data = adf,
-                               indices.y = NULL,
-                               indices.m = NULL,
-                               y.name = 'y',
-                               x.name = 'x_wc',
-                               m_b.name = 'm_wc',
-                               m_a.name = 'm',
-                               group.id = 'id',
-                               covariates.y=c('cov.y', 'm_bc', 'x_bc'),
-                               covariates.m=c('cov.m', 'x_bc'),
-                               random.a=T,
-                               random.b=T,
-                               random.c_p=T, optimizer = optimizer)
+    ab_mod <- permediatr::lmemm_within(data = adf,
+                                   y.name = 'y',
+                                   x.name = 'x_wc',
+                                   m_b.name = 'm_wc',
+                                   m_a.name = 'm',
+                                   group.id = 'id',
+                                   covariates.y=c('cov.y', 'm_bc', 'x_bc'),
+                                   covariates.m=c('cov.m', 'x_bc'),
+                                   random.a=T,
+                                   random.b=T,
+                                   random.c_p=T, optimizer = optimizer)
+    ab <- permediatr::indirectEffect(ab_mod)
     message('Generating permutations...')
     perms.y <- permute_within(n = nperms, data = adf, group.id = 'id', series = F)
     perms.m <- permute_within(n = nperms, data = adf, group.id = 'id', series = F)
@@ -157,21 +157,11 @@ optimizer: ", optimizer)
     perm_set_time <- system.time({
       ab_perms_NA <- parallel::mcmapply(function(perm_list.y, perm_list.m){
         mapply(function(indices.y, indices.m){
-          ab <- indirect_within.lme4(data = adf,
-                                     indices.y = indices.y,
-                                     indices.m = indices.m,
-                                     y.name = 'y',
-                                     x.name = 'x_wc',
-                                     m_b.name = 'm_wc',
-                                     m_a.name = 'm',
-                                     group.id = 'id',
-                                     covariates.y=c('cov.y', 'm_bc', 'x_bc'),
-                                     covariates.m=c('cov.m', 'x_bc'),
-                                     random.a=T,
-                                     random.b=T,
-                                     random.c_p=T,
-                                     optimizer = optimizer,
-                                     re.form.y = NA, re.form.m = NA)
+          ab <- permediatr::lmemm_within.perm(x = ab_mod,
+                                              indices.y = indices.y,
+                                              indices.m = indices.m,
+                                              re.form.y = NA, 
+                                              re.form.m = NA)
         }, perm_list.y, perm_list.m, SIMPLIFY = FALSE)
       }, split_perms_list.y, split_perms_list.m, SIMPLIFY = FALSE, mc.cores = mc.cores)
     })
@@ -180,21 +170,11 @@ optimizer: ", optimizer)
     perm_set_time <- system.time({
       ab_perms_NULL <- parallel::mcmapply(function(perm_list.y, perm_list.m){
         mapply(function(indices.y, indices.m){
-          ab <- indirect_within.lme4(data = adf,
-                                     indices.y = indices.y,
-                                     indices.m = indices.m,
-                                     y.name = 'y',
-                                     x.name = 'x_wc',
-                                     m_b.name = 'm_wc',
-                                     m_a.name = 'm',
-                                     group.id = 'id',
-                                     covariates.y=c('cov.y', 'm_bc', 'x_bc'),
-                                     covariates.m=c('cov.m', 'x_bc'),
-                                     random.a=T,
-                                     random.b=T,
-                                     random.c_p=T,
-                                     optimizer = optimizer,
-                                     re.form.y = NULL, re.form.m = NULL)
+          ab <- permediatr::lmemm_within.perm(x = ab_mod,
+                                              indices.y = indices.y,
+                                              indices.m = indices.m,
+                                              re.form.y = NULL, 
+                                              re.form.m = NULL)
         }, perm_list.y, perm_list.m, SIMPLIFY = FALSE)
       }, split_perms_list.y, split_perms_list.m, SIMPLIFY = FALSE, mc.cores = mc.cores)
     })

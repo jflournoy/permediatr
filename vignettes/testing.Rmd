@@ -1,4 +1,4 @@
-```{r}
+```{r eval=FALSE}
 library(permediatr)
 library(lme4)
 adf <- simulate_mediation_data(J = 100, n_j = 10, a = 0, b = 0, c_p = 0, theta_ab = .2)

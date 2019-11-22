@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>getmaxfun — getmaxfun • permediatr</title>
+<title>lmemm_within — lmemm_within • permediatr</title>
 
 <!-- jquery -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
@@ -30,9 +30,9 @@
 
 
 
-<meta property="og:title" content="getmaxfun — getmaxfun" />
+<meta property="og:title" content="lmemm_within — lmemm_within" />
 
-<meta property="og:description" content="getmaxfun" />
+<meta property="og:description" content="lmemm_within" />
 <meta name="twitter:card" content="summary" />
 
 
@@ -109,24 +109,67 @@
 <div class="row">
   <div class="col-md-9 contents">
     <div class="page-header">
-    <h1>getmaxfun</h1>
+    <h1>lmemm_within</h1>
     
-    <div class="hidden name"><code>getmaxfun.Rd</code></div>
+    <div class="hidden name"><code>lmemm_within.Rd</code></div>
     </div>
 
     <div class="ref-description">
     
-    <p>getmaxfun</p>
+    <p>lmemm_within</p>
     
     </div>
 
-    <pre class="usage"><span class='fu'>getmaxfun</span>(<span class='no'>form</span>, <span class='no'>data</span>)</pre>
+    <pre class="usage"><span class='fu'>lmemm_within</span>(<span class='no'>data</span>, <span class='no'>y.name</span>, <span class='no'>x.name</span>, <span class='no'>m_b.name</span>, <span class='no'>m_a.name</span>, <span class='no'>group.id</span>,
+  <span class='kw'>covariates.y</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>covariates.m</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>random.a</span> <span class='kw'>=</span> <span class='no'>T</span>,
+  <span class='kw'>random.b</span> <span class='kw'>=</span> <span class='no'>T</span>, <span class='kw'>random.c_p</span> <span class='kw'>=</span> <span class='no'>T</span>, <span class='kw'>optimizer</span> <span class='kw'>=</span> <span class='st'>"nloptwrap"</span>,
+  <span class='kw'>lmeropts</span> <span class='kw'>=</span> <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/list'>list</a></span>())</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
-      <th>data</th>
+      <th>y.name</th>
+      <td><p>y variable name.</p></td>
+    </tr>
+    <tr>
+      <th>x.name</th>
+      <td><p>x variable name (should be within-person centered).</p></td>
+    </tr>
+    <tr>
+      <th>m_b.name</th>
+      <td><p>mediator variable name (within-person centered for computing b path).</p></td>
+    </tr>
+    <tr>
+      <th>m_a.name</th>
+      <td><p>mediator variable name (raw for computing a path).</p></td>
+    </tr>
+    <tr>
+      <th>group.id</th>
+      <td><p>grouping variable for random effects.</p></td>
+    </tr>
+    <tr>
+      <th>covariates.y</th>
+      <td><p>any covariates to include in regression of y.</p></td>
+    </tr>
+    <tr>
+      <th>covariates.m</th>
+      <td><p>any covariates to include in regression of m.</p></td>
+    </tr>
+    <tr>
+      <th>random.a</th>
+      <td><p>include random effect for m on x (a path).</p></td>
+    </tr>
+    <tr>
+      <th>random.b</th>
+      <td><p>include random effect for y on m (b path).</p></td>
+    </tr>
+    <tr>
+      <th>random.c_p</th>
+      <td><p>include random effect for y on x (c' path).</p></td>
+    </tr>
+    <tr>
+      <th>lmeropts</th>
       <td></td>
     </tr>
     </table>
