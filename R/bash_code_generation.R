@@ -66,7 +66,7 @@ module load R/3.5.1-fasrc01
 #-----------#
 
 nreps=', nreps,'
-nperms=', niter,'
+niter=', niter,'
 mccores=', mc.cores,'
 simtype=', simtype,'
 J=', J,'
