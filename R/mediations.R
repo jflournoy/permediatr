@@ -319,3 +319,6 @@ getmaxfun <- function(form, data){
   model_maxfun <- 10*(model_numFx + model_numRx + 1)^2
   return(model_maxfun)
 }
+
+
+

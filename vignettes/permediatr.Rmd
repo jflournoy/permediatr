@@ -1,5 +1,5 @@
 ---
-title: "Error rate of permutation method"
+title: "Error rate of permutation and bootstrap methods"
 author: "John Flournoy"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_document

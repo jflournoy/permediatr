@@ -32,7 +32,7 @@
 
 <meta property="og:title" content="run_permutation_simulation — run_permutation_simulation" />
 
-<meta property="og:description" content="run_permutation_simulation" />
+<meta property="og:description" content="Included for backward compatibility." />
 <meta name="twitter:card" content="summary" />
 
 
@@ -116,20 +116,30 @@
 
     <div class="ref-description">
     
-    <p>run_permutation_simulation</p>
+    <p>Included for backward compatibility.</p>
     
     </div>
 
-    <pre class="usage"><span class='fu'>run_permutation_simulation</span>(<span class='no'>nreps</span>, <span class='no'>nperms</span>, <span class='no'>mc.cores</span>, <span class='kw'>J</span> <span class='kw'>=</span> <span class='fl'>100</span>, <span class='kw'>n_j</span> <span class='kw'>=</span> <span class='fl'>4</span>,
-  <span class='kw'>a</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>b</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>c_p</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>theta_ab</span> <span class='kw'>=</span> <span class='fl'>0.2</span>, <span class='kw'>optimizer</span> <span class='kw'>=</span> <span class='st'>"bobyqa"</span>,
-  <span class='kw'>re.form</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>permtype</span> <span class='kw'>=</span> <span class='st'>"within"</span>)</pre>
+    <pre class="usage"><span class='fu'>run_permutation_simulation</span>(<span class='no'>nreps</span>, <span class='no'>niter</span>, <span class='no'>mc.cores</span>, <span class='no'>...</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
-      <th>optimizer</th>
-      <td></td>
+      <th>nreps</th>
+      <td><p>Number of repetitions using new data.</p></td>
+    </tr>
+    <tr>
+      <th>niter</th>
+      <td><p>For each simulated data set, number of permutation or bootstrap iterations.</p></td>
+    </tr>
+    <tr>
+      <th>mc.cores</th>
+      <td><p>Number of cores to use.</p></td>
+    </tr>
+    <tr>
+      <th>...</th>
+      <td><p>To be passed to <code><a href='run_simulation.html'>run_simulation</a></code></p></td>
     </tr>
     </table>
     

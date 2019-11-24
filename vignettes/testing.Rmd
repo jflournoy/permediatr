@@ -1,33 +1,20 @@
 ```{r eval=FALSE}
 library(permediatr)
 library(lme4)
-adf <- simulate_mediation_data(J = 100, n_j = 10, a = 0, b = 0, c_p = 0, theta_ab = .2)
-fit <- lmer(y ~ m_wc + x_wc + (1 + m_wc + x_wc | id), data = adf, control = lmerControl(optCtrl = list(maxfun = 100)))
-summary(fit)
-formula(fit)
-
-x <- permediatrMod(data = adf,
-                    y.name = 'y',
-                    x.name = 'x_wc',
-                    m_b.name = 'm_wc',
-                    m_a.name = 'm',
-                    group.id = 'id',
-                    covariates.y=c('cov.y', 'm_bc', 'x_bc'),
-                    covariates.m=c('cov.m', 'x_bc'),
-                    random.a=T,
-                    random.b=T,
-                    random.c_p=T, optimizer = 'bobyqa')
-
-if(!permediatr::is.permediatrMod(x)){
-    ab_mod <- permediatr::permediatrMod(data = x, ...)
-  } else {
-    ab_mod <- x
-  }
-  
-  form.y <- formula(ab_mod$model.y)
-  form.m <- formula(ab_mod$model.m)
-
-  starFormula.y <- update(form.y, as.formula(paste0('y_star ~ .')))
-  starFormula.m <- update(form.m, as.formula(paste0('m_star ~ .')))
-
+attach(list(nreps = 1, nperms = 500, mc.cores = 7, J = 100, n_j = 10, a = 0, b = .5, c_p = 0, theta_ab = .2, optimizer = 'bobyqa'))
+adf <- simulate_mediation_data(J = J, n_j = n_j, a = a, b = b, c_p = c_p, theta_ab = theta_ab)
+ab_mod <- permediatr::lmemm_within(data = adf,
+                                   y.name = 'y',
+                                   x.name = 'x_wc',
+                                   m_b.name = 'm_wc',
+                                   m_a.name = 'm',
+                                   group.id = 'id',
+                                   covariates.y=c('cov.y', 'm_bc', 'x_bc'),
+                                   covariates.m=c('cov.m', 'x_bc'),
+                                   random.a=T,
+                                   random.b=T,
+                                   random.c_p=T, optimizer = optimizer)
+ab <- indirectEffect(ab_mod)
+boot_rez <- permediatr::run_simulation(5, niter = 500, mc.cores = 7, simtype = 'bootstrap', J = 100, n_j = 10, a = 0, b = 0, c_p = 0, theta_ab = .2, optimizer = 'bobyqa', re.form = NA, boottype = 'parametric')
+data.table::rbindlist(boot_rez)
 ```

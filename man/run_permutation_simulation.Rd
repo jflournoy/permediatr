@@ -4,13 +4,17 @@
 \alias{run_permutation_simulation}
 \title{run_permutation_simulation}
 \usage{
-run_permutation_simulation(nreps, nperms, mc.cores, J = 100, n_j = 4,
-  a = 0, b = 0, c_p = 0, theta_ab = 0.2, optimizer = "bobyqa",
-  re.form = NULL, permtype = "within")
+run_permutation_simulation(nreps, niter, mc.cores, ...)
 }
 \arguments{
-\item{optimizer}{}
+\item{nreps}{Number of repetitions using new data.}
+
+\item{niter}{For each simulated data set, number of permutation or bootstrap iterations.}
+
+\item{mc.cores}{Number of cores to use.}
+
+\item{...}{To be passed to \code{\link{run_simulation}}}
 }
 \description{
-run_permutation_simulation
+Included for backward compatibility.
 }
