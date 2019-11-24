@@ -24,7 +24,7 @@
 #' @export
 #'
 #' @examples
-generate_slurm_file <- function(bash_out_dir, nreps, niter, mc.cores, simtype = 'permutation', J = 100, n_j = 4, a = 0, b = 0, c_p = 0, theta_ab = .2, re.form = NULL, permtype = 'within', boottype = 'parametric', optimizer = "bobyqa", job_name = "permediatr", job_time = "2-00:00:00", job_mem = "5G", partition = "ncf_holy", email_address = NULL, save_dir = "./"){
+generate_slurm_file <- function(bash_out_dir, nreps, niter, mc.cores, simtype = 'permutation', J = 100, n_j = 4, a = 0, b = 0, c_p = 0, theta_ab = .2, re.form = NULL, permtype = 'within', boottype = 'parametric', optimizer = "bobyqa", job_name = "permediatr", job_time = "2-00:00:00", job_mem = "5G", partition = "ncf_holy", email_address = NULL, save_dir = "./", fname_prefix = 'pmjob'){
 
   path_to_script <- system.file(file.path('bin', 'permediatr_simulation.R'), package = 'permediatr')
 
@@ -33,7 +33,7 @@ generate_slurm_file <- function(bash_out_dir, nreps, niter, mc.cores, simtype = 
   job_numbers <- 1:dim(array_df)[1]-1
   job_array_range <- paste(range(job_numbers), collapse = '-')
   ndigits <- max(floor(log10(abs(job_numbers)))+1)
-  sim_names <- sprintf(paste0('pmjob_%0', ndigits,'d'), job_numbers)
+  sim_names <- sprintf(paste0(fname_prefix, '_%0', ndigits,'d'), job_numbers)
   name_values <- paste(sim_names, collapse = ' ')
   param_values <- sapply(array_df, paste, collapse = ' ')
 

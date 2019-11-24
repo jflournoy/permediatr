@@ -13,7 +13,7 @@
 #SBATCH --mail-type=ALL
 # ------------------------------------------
 #
-#usage: sbatch --array=0-9 ../inst/bin//slurmjob.bash
+#usage: sbatch --array=0-9 inst/bin//slurmjob.bash
 
 #--MODULES--#
 module load gcc/8.2.0-fasrc01
@@ -34,8 +34,8 @@ reform=(NA NA NA NA NA NA NA NA NA NA)
 permtype=(within within within within within within within within within within)
 boottype=(parametric parametric parametric parametric parametric parametric parametric parametric parametric parametric)
 optimizer="bobyqa"
-dataout="/net/holynfs01/srv/export/mclaughlin/share_root/users/jflournoy/data"
-name=(pmjob_0 pmjob_1 pmjob_2 pmjob_3 pmjob_4 pmjob_5 pmjob_6 pmjob_7 pmjob_8 pmjob_9)
+dataout="/net/holynfs01/srv/export/mclaughlin/share_root/users/jflournoy/data/boot"
+name=(boot_NA_par_0 boot_NA_par_1 boot_NA_par_2 boot_NA_par_3 boot_NA_par_4 boot_NA_par_5 boot_NA_par_6 boot_NA_par_7 boot_NA_par_8 boot_NA_par_9)
 index=${SLURM_ARRAY_TASK_ID}
 permediatrpath=/home/jflournoy/Rlibs/permediatr/bin/permediatr_simulation.R
 
