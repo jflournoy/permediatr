@@ -4,14 +4,16 @@
 \alias{generate_slurm_file}
 \title{generate_slurm_file}
 \usage{
-generate_slurm_file(bash_out_dir, nreps, nperms, mc.cores, J = 100,
-  n_j = 4, a = 0, b = 0, c_p = 0, theta_ab = 0.2,
-  re.form = NULL, optimizer = "bobyqa", job_name = "permediatr",
-  job_time = "2-00:00:00", job_mem = "5G", partition = "ncf_holy",
-  email_address = NULL, save_dir = "./")
+generate_slurm_file(bash_out_dir, nreps, niter, mc.cores,
+  simtype = "permutation", J = 100, n_j = 4, a = 0, b = 0,
+  c_p = 0, theta_ab = 0.2, re.form = NULL, permtype = "within",
+  boottype = "parametric", optimizer = "bobyqa",
+  job_name = "permediatr", job_time = "2-00:00:00", job_mem = "5G",
+  partition = "ncf_holy", email_address = NULL, save_dir = "./",
+  fname_prefix = "pmjob")
 }
 \arguments{
-\item{save_dir}{}
+\item{re.form}{}
 }
 \description{
 generate_slurm_file

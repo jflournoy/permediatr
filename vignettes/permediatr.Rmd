@@ -129,13 +129,13 @@ ggplot(perm_sim_results_summary_l[is.na(reform) & permtype == 'between_within'],
 ## Table of FPs
 
 ```{r}
-knitr::kable(perm_sim_results_summary_l)
+DT::datatable(perm_sim_results_summary_l)
 ```
 
 ## Table of Bias
 
 ```{r}
-knitr::kable(perm_sim_bias_summary)
+DT::datatable(perm_sim_bias_summary)
 ```
 
 # Bootstrap Sim Results {.tabset}
@@ -177,11 +177,11 @@ ggplot(boot_sim_results_summary_l,
 ## Table of FPs
 
 ```{r}
-knitr::kable(boot_sim_results_summary_l)
+DT::datatable(boot_sim_results_summary_l)
 ```
 
 ## Table of Bias
 
 ```{r}
-knitr::kable(boot_sim_bias_summary)
+DT::datatable(boot_sim_bias_summary)
 ```

@@ -63,7 +63,7 @@
       </button>
       <span class="navbar-brand">
         <a class="navbar-link" href="../index.html">permediatr</a>
-        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.1.0</span>
+        <span class="version label label-default" data-toggle="tooltip" data-placement="bottom" title="Released version">0.1.0.9000</span>
       </span>
     </div>
 
@@ -120,17 +120,19 @@
     
     </div>
 
-    <pre class="usage"><span class='fu'>generate_slurm_file</span>(<span class='no'>bash_out_dir</span>, <span class='no'>nreps</span>, <span class='no'>nperms</span>, <span class='no'>mc.cores</span>, <span class='kw'>J</span> <span class='kw'>=</span> <span class='fl'>100</span>,
-  <span class='kw'>n_j</span> <span class='kw'>=</span> <span class='fl'>4</span>, <span class='kw'>a</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>b</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>c_p</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>theta_ab</span> <span class='kw'>=</span> <span class='fl'>0.2</span>,
-  <span class='kw'>re.form</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>optimizer</span> <span class='kw'>=</span> <span class='st'>"bobyqa"</span>, <span class='kw'>job_name</span> <span class='kw'>=</span> <span class='st'>"permediatr"</span>,
-  <span class='kw'>job_time</span> <span class='kw'>=</span> <span class='st'>"2-00:00:00"</span>, <span class='kw'>job_mem</span> <span class='kw'>=</span> <span class='st'>"5G"</span>, <span class='kw'>partition</span> <span class='kw'>=</span> <span class='st'>"ncf_holy"</span>,
-  <span class='kw'>email_address</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>save_dir</span> <span class='kw'>=</span> <span class='st'>"./"</span>)</pre>
+    <pre class="usage"><span class='fu'>generate_slurm_file</span>(<span class='no'>bash_out_dir</span>, <span class='no'>nreps</span>, <span class='no'>niter</span>, <span class='no'>mc.cores</span>,
+  <span class='kw'>simtype</span> <span class='kw'>=</span> <span class='st'>"permutation"</span>, <span class='kw'>J</span> <span class='kw'>=</span> <span class='fl'>100</span>, <span class='kw'>n_j</span> <span class='kw'>=</span> <span class='fl'>4</span>, <span class='kw'>a</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>b</span> <span class='kw'>=</span> <span class='fl'>0</span>,
+  <span class='kw'>c_p</span> <span class='kw'>=</span> <span class='fl'>0</span>, <span class='kw'>theta_ab</span> <span class='kw'>=</span> <span class='fl'>0.2</span>, <span class='kw'>re.form</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>permtype</span> <span class='kw'>=</span> <span class='st'>"within"</span>,
+  <span class='kw'>boottype</span> <span class='kw'>=</span> <span class='st'>"parametric"</span>, <span class='kw'>optimizer</span> <span class='kw'>=</span> <span class='st'>"bobyqa"</span>,
+  <span class='kw'>job_name</span> <span class='kw'>=</span> <span class='st'>"permediatr"</span>, <span class='kw'>job_time</span> <span class='kw'>=</span> <span class='st'>"2-00:00:00"</span>, <span class='kw'>job_mem</span> <span class='kw'>=</span> <span class='st'>"5G"</span>,
+  <span class='kw'>partition</span> <span class='kw'>=</span> <span class='st'>"ncf_holy"</span>, <span class='kw'>email_address</span> <span class='kw'>=</span> <span class='kw'>NULL</span>, <span class='kw'>save_dir</span> <span class='kw'>=</span> <span class='st'>"./"</span>,
+  <span class='kw'>fname_prefix</span> <span class='kw'>=</span> <span class='st'>"pmjob"</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
-      <th>save_dir</th>
+      <th>re.form</th>
       <td></td>
     </tr>
     </table>
