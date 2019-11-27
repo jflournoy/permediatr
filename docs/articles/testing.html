@@ -5,11 +5,11 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title> • permediatr</title>
+<title>Examples • permediatr</title>
 <!-- jquery --><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script><!-- Bootstrap --><link href="https://cdnjs.cloudflare.com/ajax/libs/bootswatch/3.3.7/cerulean/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha256-U5ZEeKfGNOja007MMD3YBI0A3OSZOQbeG6z2f2Y0hu8=" crossorigin="anonymous"></script><!-- Font Awesome icons --><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" integrity="sha256-eZrrJcwDc/3uDhsdt61sL2oOBY362qM3lon1gyExkL0=" crossorigin="anonymous">
 <!-- clipboard.js --><script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.4/clipboard.min.js" integrity="sha256-FiZwavyI2V6+EXO1U+xzLG3IKldpiTFf3153ea9zikQ=" crossorigin="anonymous"></script><!-- sticky kit --><script src="https://cdnjs.cloudflare.com/ajax/libs/sticky-kit/1.1.3/sticky-kit.min.js" integrity="sha256-c4Rlo1ZozqTPE2RLuvbusY3+SU1pQaJC0TjuhygMipw=" crossorigin="anonymous"></script><!-- pkgdown --><link href="../pkgdown.css" rel="stylesheet">
-<script src="../pkgdown.js"></script><meta property="og:title" content="">
+<script src="../pkgdown.js"></script><meta property="og:title" content="Examples">
 <meta property="og:description" content="">
 <meta name="twitter:card" content="summary">
 <!-- mathjax --><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js" integrity="sha256-nvJJv9wWKEm88qvoQl9ekL2J+k/RWIsaSScxxlsrv8k=" crossorigin="anonymous"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/config/TeX-AMS-MML_HTMLorMML.js" integrity="sha256-84DKXVJXs0/F8OTMzX4UR909+jtl4G7SPypPavF+GfA=" crossorigin="anonymous"></script><!--[if lt IE 9]>
@@ -56,7 +56,7 @@
   </a>
   <ul class="dropdown-menu" role="menu">
 <li>
-      <a href="../articles/testing.html">UNKNOWN TITLE</a>
+      <a href="../articles/testing.html">Examples</a>
     </li>
   </ul>
 </li>
@@ -73,8 +73,10 @@
       </header><div class="row">
   <div class="col-md-9 contents">
     <div class="page-header toc-ignore">
-      <h1></h1>
+      <h1>Examples</h1>
+                        <h4 class="author">John Flournoy</h4>
             
+            <h4 class="date">2019-11-27</h4>
       
       
       <div class="hidden name"><code>testing.Rmd</code></div>
@@ -99,8 +101,13 @@
 <a class="sourceLine" id="cb1-14" data-line-number="14">                                   <span class="dt">random.b=</span>T,</a>
 <a class="sourceLine" id="cb1-15" data-line-number="15">                                   <span class="dt">random.c_p=</span>T, <span class="dt">optimizer =</span> optimizer)</a>
 <a class="sourceLine" id="cb1-16" data-line-number="16">ab &lt;-<span class="st"> </span><span class="kw"><a href="../reference/indirectEffect.html">indirectEffect</a></span>(ab_mod)</a>
-<a class="sourceLine" id="cb1-17" data-line-number="17">boot_rez &lt;-<span class="st"> </span>permediatr<span class="op">::</span><span class="kw"><a href="https://www.rdocumentation.org/packages/permediatr/topics/run_simulation">run_simulation</a></span>(<span class="dv">5</span>, <span class="dt">niter =</span> <span class="dv">500</span>, <span class="dt">mc.cores =</span> <span class="dv">7</span>, <span class="dt">simtype =</span> <span class="st">'bootstrap'</span>, <span class="dt">J =</span> <span class="dv">100</span>, <span class="dt">n_j =</span> <span class="dv">10</span>, <span class="dt">a =</span> <span class="dv">0</span>, <span class="dt">b =</span> <span class="dv">0</span>, <span class="dt">c_p =</span> <span class="dv">0</span>, <span class="dt">theta_ab =</span> <span class="fl">.2</span>, <span class="dt">optimizer =</span> <span class="st">'bobyqa'</span>, <span class="dt">re.form =</span> <span class="ot">NA</span>, <span class="dt">boottype =</span> <span class="st">'parametric'</span>)</a>
-<a class="sourceLine" id="cb1-18" data-line-number="18">data.table<span class="op">::</span><span class="kw">rbindlist</span>(boot_rez)</a></code></pre></div>
+<a class="sourceLine" id="cb1-17" data-line-number="17"></a>
+<a class="sourceLine" id="cb1-18" data-line-number="18">boot_rez &lt;-<span class="st"> </span>permediatr<span class="op">::</span><span class="kw"><a href="https://www.rdocumentation.org/packages/permediatr/topics/run_simulation">run_simulation</a></span>(<span class="dv">5</span>, <span class="dt">niter =</span> <span class="dv">500</span>, <span class="dt">mc.cores =</span> <span class="dv">7</span>, <span class="dt">simtype =</span> <span class="st">'bootstrap'</span>, <span class="dt">J =</span> <span class="dv">100</span>, <span class="dt">n_j =</span> <span class="dv">10</span>, <span class="dt">a =</span> <span class="dv">0</span>, <span class="dt">b =</span> <span class="dv">0</span>, <span class="dt">c_p =</span> <span class="dv">0</span>, <span class="dt">theta_ab =</span> <span class="fl">.2</span>, <span class="dt">optimizer =</span> <span class="st">'bobyqa'</span>, <span class="dt">re.form =</span> <span class="ot">NA</span>, <span class="dt">boottype =</span> <span class="st">'parametric'</span>)</a>
+<a class="sourceLine" id="cb1-19" data-line-number="19">data.table<span class="op">::</span><span class="kw">rbindlist</span>(boot_rez)</a></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb2-1" data-line-number="1"><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/system.time">system.time</a></span>({oneboot &lt;-<span class="st"> </span>permediatr<span class="op">::</span><span class="kw"><a href="https://www.rdocumentation.org/packages/permediatr/topics/boot_ab">boot_ab</a></span>(ab_mod, <span class="dt">nsim =</span> <span class="dv">1000</span>, <span class="dt">ncpus =</span> <span class="dv">7</span>, <span class="dt">re.form =</span> <span class="ot">NA</span>, <span class="dt">type =</span> <span class="st">'cases'</span>, <span class="dt">how =</span> <span class="st">'both'</span>, <span class="dt">seed =</span> <span class="dv">1</span>)})</a>
+<a class="sourceLine" id="cb2-2" data-line-number="2">twoboot &lt;-<span class="st"> </span>permediatr<span class="op">::</span><span class="kw"><a href="https://www.rdocumentation.org/packages/permediatr/topics/boot_ab">boot_ab</a></span>(ab_mod, <span class="dt">nsim =</span> <span class="dv">1000</span>, <span class="dt">ncpus =</span> <span class="dv">7</span>, <span class="dt">re.form =</span> <span class="ot">NA</span>, <span class="dt">type =</span> <span class="st">'cases'</span>, <span class="dt">how =</span> <span class="st">'both'</span>, <span class="dt">seed =</span> <span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb2-3" data-line-number="3">threeboot &lt;-<span class="st"> </span>permediatr<span class="op">::</span><span class="kw"><a href="https://www.rdocumentation.org/packages/permediatr/topics/boot_ab">boot_ab</a></span>(ab_mod, <span class="dt">nsim =</span> <span class="dv">1000</span>, <span class="dt">ncpus =</span> <span class="dv">7</span>, <span class="dt">re.form =</span> <span class="ot">NA</span>, <span class="dt">type =</span> <span class="st">'cases'</span>, <span class="dt">how =</span> <span class="st">'both'</span>, <span class="dt">seed =</span> <span class="dv">123123</span>)</a>
+<a class="sourceLine" id="cb2-4" data-line-number="4"><span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/cbind">rbind</a></span>(<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/summary">summary</a></span>(oneboot),<span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/summary">summary</a></span>(twoboot), <span class="kw"><a href="https://www.rdocumentation.org/packages/base/topics/summary">summary</a></span>(threeboot))</a></code></pre></div>
   </div>
 
   <div class="col-md-3 hidden-xs hidden-sm" id="sidebar">

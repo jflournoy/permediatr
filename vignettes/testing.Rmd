@@ -1,3 +1,16 @@
+---
+title: "Examples"
+author: "John Flournoy"
+date: "`r Sys.Date()`"
+output: 
+  rmarkdown::html_document:
+    code_folding: hide
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+---
+
 ```{r eval=FALSE}
 library(permediatr)
 library(lme4)
@@ -15,6 +28,17 @@ ab_mod <- permediatr::lmemm_within(data = adf,
                                    random.b=T,
                                    random.c_p=T, optimizer = optimizer)
 ab <- indirectEffect(ab_mod)
-boot_rez <- permediatr::run_simulation(5, niter = 500, mc.cores = 7, simtype = 'bootstrap', J = 100, n_j = 10, a = 0, b = 0, c_p = 0, theta_ab = .2, optimizer = 'bobyqa', re.form = NA, boottype = 'parametric')
-data.table::rbindlist(boot_rez)
+
+boot_rez <- permediatr::run_simulation(3, niter = 500, mc.cores = 7, simtype = 'bootstrap', J = 100, n_j = 10, a = 0, b = 0, c_p = 0, theta_ab = .2, optimizer = 'bobyqa', re.form = NA, boottype = 'parametric')
+data.table::rbindlist(lapply(boot_rez, as.data.frame))
+```
+
+
+```{r eval = F}
+system.time({oneboot <- permediatr::boot_ab(ab_mod, nsim = 250, ncpus = 7, re.form = NA, type = 'cases', how = 'both', seed = 1)})
+twoboot <- permediatr::boot_ab(ab_mod, nsim = 1000, ncpus = 7, re.form = NA, type = 'cases', how = 'both', seed = 1)
+threeboot <- permediatr::boot_ab(ab_mod, nsim = 1000, ncpus = 7, re.form = NA, type = 'cases', how = 'both', seed = 123123)
+rbind(summary(oneboot),summary(twoboot), summary(threeboot))
+
+do.call(rbind, list(summary(oneboot, 'ab'), summary(oneboot, 'a'), summary(oneboot, 'b')))
 ```

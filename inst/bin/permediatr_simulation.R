@@ -39,7 +39,7 @@ parser$add_argument('--theta_ab', type="double",
 parser$add_argument('--optimizer', type="character", help='Name of the optimizer to use in the lme4::lmer calls.', default = 'bobyqa')
 parser$add_argument('--reform', type="character", help='Formula specifying random effects structure for prediction. NULL and NA have special meaning (see lme4 documentation).', default = 'NULL')
 parser$add_argument('--permtype', type="character", help='How to permute values. Valid options are "between", "within" and "between_within". "within" will shuffle values within levels of the grouping factor. "between" shuffles strata of observations defined by the grouping factor. "between_within" combines the two (note that observations are not mixed across strata).', default = 'within')
-parser$add_argument('--boottype', type="character", help='What kind of bootstrapping to be done. Semiparametric is still experimental and does not work with all values of "--reform". See documentaion for lme4::bootMer.', default = 'parametric')
+parser$add_argument('--boottype', type="character", help='What kind of bootstrapping to be done. Semiparametric is still experimental and does not work with all values of "--reform". See documentaion for lme4::bootMer. Also may be "cases", in which case "--permtype" sets the way that cases are resampled.', default = 'parametric')
 args <- parser$parse_args()
 
 if(args$reform == 'NULL'){
@@ -90,24 +90,30 @@ message('Saving results to RDS file: ', rds_file)
 saveRDS(results, file = rds_file)
 csv_file <- file.path(args$save_dir, paste0(args$simulation_name, '.csv'))
 message('Saving results to CSV file: ', csv_file)
-results_df <- do.call(rbind,lapply(results, function(x) data.frame(t(unlist(x[-which(names(x) %in% c('ab_warnings', 'ab_singular'))])))))
+results_df <- do.call(rbind, lapply(results, function(x) {
+  if(inherits(x, 'list')){
+    return(data.frame(t(unlist(x[-which(names(x) %in% c('warnings', 'singular'))]))))
+  } else if(inherits(x, 'matrix')) {
+    return(as.data.frame(x[,-which(dimnames(x)[[2]] %in% c('warnings', 'singular'))]))
+  }
+  }))
 results_csv <- cbind(results_df, data.frame(args))
 write.csv(results_csv, file = csv_file)
 
-# args <- parser$parse_args(
-#   c('~/', 'test',
-#     '--nreps', '2',
-#   '--niter', '500',
-#   '--mc.cores', '7',
-#   '--simtype', 'bootstrap',
-#   '--J', '100',
-#   '--n_j', '10',
-#   '--a', '.2',
-#   '--b', '0',
-#   '--c_p', '0',
-#   '--theta_ab', '.2',
-#   '--optimizer', 'bobyqa',
-#   '--reform', 'NA',
-#   '--permtype', 'between_within',
-#   '--boottype', 'parametric')
-# )
+args <- parser$parse_args(
+  c('~/', 'test',
+    '--nreps', '2',
+  '--niter', '500',
+  '--mc.cores', '7',
+  '--simtype', 'bootstrap',
+  '--J', '100',
+  '--n_j', '10',
+  '--a', '.2',
+  '--b', '0',
+  '--c_p', '0',
+  '--theta_ab', '.2',
+  '--optimizer', 'bobyqa',
+  '--reform', 'NA',
+  '--permtype', 'between_within',
+  '--boottype', 'parametric')
+)

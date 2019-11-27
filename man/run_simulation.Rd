@@ -12,11 +12,17 @@ run_simulation(nreps, niter, mc.cores, simtype = "permutation",
 \arguments{
 \item{nreps}{Number of repetitions using new data.}
 
-\item{niter}{For each simulated data set, number of permutation or bootstrap iterations.}
+\item{niter}{For each simulated data set, number of permutation or bootstrap
+iterations.}
 
 \item{mc.cores}{Number of cores to use.}
 
 \item{simtype}{Permutations or bootstrap.}
+
+\item{permtype}{This can be used to specify either the permutation type
+('within', 'between', or 'between_within'), or if simtype is 'bootstrap',
+and boottype is 'cases', it is used to specify how cases are resampled,
+('groups', 'within', 'both').}
 
 \item{boottype}{}
 }

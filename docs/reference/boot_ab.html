@@ -90,7 +90,7 @@ re.form and type." />
   </a>
   <ul class="dropdown-menu" role="menu">
     <li>
-      <a href="../articles/testing.html">UNKNOWN TITLE</a>
+      <a href="../articles/testing.html">Examples</a>
     </li>
   </ul>
 </li>
@@ -123,7 +123,8 @@ re.form and type." />
     </div>
 
     <pre class="usage"><span class='fu'>boot_ab</span>(<span class='no'>x</span>, <span class='no'>nsim</span>, <span class='no'>ncpus</span>, <span class='kw'>re.form</span> <span class='kw'>=</span> <span class='fl'>NA</span>, <span class='kw'>type</span> <span class='kw'>=</span> <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/c'>c</a></span>(<span class='st'>"parametric"</span>,
-  <span class='st'>"semiparametric"</span>))</pre>
+  <span class='st'>"semiparametric"</span>, <span class='st'>"cases"</span>), <span class='kw'>how</span> <span class='kw'>=</span> <span class='fu'><a href='https://www.rdocumentation.org/packages/base/topics/c'>c</a></span>(<span class='st'>"groups"</span>, <span class='st'>"within"</span>, <span class='st'>"both"</span>),
+  <span class='kw'>seed</span> <span class='kw'>=</span> <span class='kw'>NULL</span>)</pre>
     
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
@@ -138,13 +139,22 @@ re.form and type." />
 <code>use.u=FALSE</code>; new normal deviates are drawn), or NULL (equivalent to
 <code><a href='https://www.rdocumentation.org/packages/lme4/topics/bootMer'>bootMer</a></code>'s <code>use.u=TRUE</code>; all inference is
 conditional on these values) or formula specifying which random effects to
-incorporate. See <code><a href='https://www.rdocumentation.org/packages/lme4/topics/simulate.merMod'>simulate.merMod</a></code> for further details.</p></td>
+incorporate. See <code><a href='https://www.rdocumentation.org/packages/lme4/topics/simulate.merMod'>simulate.merMod</a></code> for further details.
+Not used if type == 'cases'.</p></td>
     </tr>
     <tr>
       <th>type</th>
       <td><p>character string specifying the type of bootstrap,
 <code>"parametric"</code> or <code>"semiparametric"</code>; partial matching is
 allowed.</p></td>
+    </tr>
+    <tr>
+      <th>how</th>
+      <td><p>character specifying the type of resampling if type == 'cases'.</p></td>
+    </tr>
+    <tr>
+      <th>seed</th>
+      <td></td>
     </tr>
     </table>
     

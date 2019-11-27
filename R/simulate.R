@@ -96,193 +96,13 @@ run_permutation_simulation <- function(nreps, niter, mc.cores, ...){
   return(run_simulation(nreps = nreps, niter = niter, mc.cores = mc.cores, simtype = 'permutation'))
 }
 
-#' permute_ab
-#'
-#' @param x a permediatrMod object
-#' @param nperms
-#' @param mc.cores
-#' @param re.form
-#' @param permtype
-#'
-#' @return
-#' @export
-#'
-#' @examples
-permute_ab <- function(x, nperms, mc.cores, re.form = NULL, permtype = 'within'){
-  ab <- permediatr::indirectEffect(x)
-  adf <- x$data
-  group.id <- x$parspec[['group.id']]
-  permute_fun <- get(paste0('permute_', permtype), envir = as.environment('package:permediatr'))
-  message('Generating permutations...')
-  perms.y <- permute_fun(n = nperms, data = adf, group.id = group.id, series = F)
-  perms.m <- permute_fun(n = nperms, data = adf, group.id = group.id, series = F)
-  perms_list.y <- lapply(seq_len(nrow(perms.y)), function(i) perms.y[i,])
-  perms_list.m <- lapply(seq_len(nrow(perms.m)), function(i) perms.m[i,])
-  split_perms_list.y <- suppressWarnings(split(perms_list.y, 1:mc.cores))
-  split_perms_list.m <- suppressWarnings(split(perms_list.m, 1:mc.cores))
-  message('Evaluating ', nperms, ' permutations over ', mc.cores, ' processors...')
-  perm_set_time <- system.time({
-    ab_perms <- parallel::mcmapply(function(perm_list.y, perm_list.m){
-      mapply(function(indices.y, indices.m){
-        ab <- permediatr::lmemm_within.perm(x = x,
-                                            indices.y = indices.y,
-                                            indices.m = indices.m,
-                                            re.form.y = re.form,
-                                            re.form.m = re.form)
-      }, perm_list.y, perm_list.m, SIMPLIFY = FALSE)
-    }, split_perms_list.y, split_perms_list.m, SIMPLIFY = FALSE, mc.cores = mc.cores)
-  })
-  message('Parallel evaluitation took: ', perm_set_time[['elapsed']], 's')
-  no_convwarnings <- unlist(lapply(unlist(ab_perms, recursive = F), function(aperm){
-    awarning <- aperm[['warnings']]
-    is.null(awarning)
-  }))
-  no_singular <- unlist(lapply(unlist(ab_perms, recursive = F), function(aperm){
-    s <- aperm[['singular']]
-    is.null(s)
-  }))
-  ab_vec <- unlist(lapply(unlist(ab_perms, recursive = F), `[[`, 'ab'))
-  ab_vec <- ab_vec[no_convwarnings]
 
-  dists <- list(c_ab = ab_vec - ab$ab,
-                c_mean = ab_vec - mean(ab_vec),
-                neg_c_ab = -(ab_vec - ab$ab),
-                neg_c_mean = -(ab_vec - mean(ab_vec)))
-  p_dists <- lapply(1:length(dists), function(i){
-    p <- try(ecdf(dists[[i]])(ab$ab))
-    if(inherits(p, 'try-error')){
-      warning(p)
-      warning('Error in computing p value: ', names(dists)[[i]])
-      p <- NA
-    }
-    return(p)
-  })
-  names(p_dists) <- paste0('p_', names(dists))
-
-  p_opsign_ci <- try(mean(sign(ab$ab)*ab_vec < 0))
-  if(inherits(p_opsign_ci, 'try-error')){
-    warning(p_opsign_ci)
-    warning('Error in computing p value: p_opsign_ci')
-    p_opsign_ci <- NA
-  }
-
-  n_conv_warn <- sum(!no_convwarnings)
-  n_singular <- sum(!no_singular)
-  message('Finished this set of permutations. Number of convergence warnings: ', n_conv_warn, '\n')
-  message('Finished this set of permutations. Number of singular convergence: ', n_singular, '\n')
-  results_list <- c(
-    p_dists,
-    list(
-      p_opsign_ci = p_opsign_ci,
-      n_conv_warn = n_conv_warn,
-      n_singular = n_singular,
-      ab = ab$ab,
-      ab_warnings = ab$warnings,
-      ab_singular = ab$singular,
-      mean_ab_perm = mean(ab_vec)))
-  return(results_list)
-}
-
-#' boot_ab
-#'
-#' See \code{\link[lme4]{bootMer}} for more information on arguments for
-#' \code{re.form} and \code{type}.
-#'
-#' @param x a permediatrMod object.
-#' @param nsim
-#' @param ncpus
-#' @param re.form formula, NA (equivalent to \code{\link[lme4]{bootMer}}'s
-#'   \code{use.u=FALSE}; new normal deviates are drawn), or NULL (equivalent to
-#'   \code{\link[lme4]{bootMer}}'s \code{use.u=TRUE}; all inference is
-#'   conditional on these values) or formula specifying which random effects to
-#'   incorporate. See \code{\link[lme4]{simulate.merMod}} for further details.
-#' @param type character string specifying the type of bootstrap,
-#'   \code{"parametric"} or \code{"semiparametric"}; partial matching is
-#'   allowed.
-#'
-#' @return
-#' @export
-#' @import lme4
-#'
-#' @examples
-boot_ab <- function(x, nsim, ncpus, re.form = NA, type = c('parametric', 'semiparametric')){
-  requireNamespace('lme4', quietly = TRUE)
-  ab <- indirectEffect(x)
-
-  afun.a <- permediatr::make_bootFUN(x, path = 'a')
-  afun.b <- permediatr::make_bootFUN(x, path = 'b')
-
-  aboot.a <- lme4::bootMer(x$model.m, FUN = afun.a, nsim = nsim, re.form = re.form, type = type, parallel = 'multicore', ncpus = ncpus)
-  aboot.b <- lme4::bootMer(x$model.y, FUN = afun.b, nsim = nsim, re.form = re.form, type = type, parallel = 'multicore', ncpus = ncpus)
-
-  t_list.a <- lapply(seq_len(nrow(aboot.a$t)), function(i) aboot.a$t[i,])
-  t_list.b <- lapply(seq_len(nrow(aboot.b$t)), function(i) aboot.b$t[i,])
-
-  ab_vec <- mapply(function(a, b){
-    mean(a*b, na.rm=T)
-  }, t_list.a, t_list.b)
-
-  msgs <- list(msg.a = attr(aboot.a, 'boot.all.msgs'),
-               msg.b = attr(aboot.b, 'boot.all.msgs'))
-  msg.rpt <- lapply(msgs, function(x) lapply(x, function(y) if(!length(y) == 0) message(names(y))))
-
-  n_conv_warn <- sum(unlist(lapply(msgs, function(x) sum(as.numeric(x[['factory-warning']])))))
-  n_singular <- sum(unlist(lapply(msgs, function(x) sum(as.numeric(x[['factory-message']])))))
-  message('Finished this set of bootstrapping. Number of convergence warnings: ', n_conv_warn, '\n')
-  message('Finished this set of bootstrapping. Number of singular convergence: ', n_singular, '\n')
-
-  boot_ab_est <- mean(ab_vec)
-
-  dists <- list(c_ab = ab_vec - ab$ab,
-                c_mean = ab_vec - boot_ab_est,
-                neg_c_ab = -(ab_vec - ab$ab),
-                neg_c_mean = -(ab_vec - boot_ab_est))
-  p_dists_ab <- lapply(1:length(dists), function(i){
-    p <- try(ecdf(dists[[i]])(ab$ab))
-    if(inherits(p, 'try-error')){
-      warning(p)
-      warning('Error in computing ab p value: ', names(dists)[[i]])
-      p <- NA
-    }
-    return(p)
-  })
-  names(p_dists_ab) <- paste0('p_ab_', names(dists))
-  p_dists_boot <- lapply(1:length(dists), function(i){
-    p <- try(ecdf(dists[[i]])(boot_ab_est))
-    if(inherits(p, 'try-error')){
-      warning(p)
-      warning('Error in computing boot\'d ab p value: ', names(dists)[[i]])
-      p <- NA
-    }
-    return(p)
-  })
-  names(p_dists_boot) <- paste0('p_boot_', names(dists))
-
-  p_opsign_ci <- try(mean(sign(boot_ab_est)*ab_vec < 0))
-  if(inherits(p_opsign_ci, 'try-error')){
-    warning(p_opsign_ci)
-    warning('Error in computing p value: p_opsign_ci')
-    p_opsign_ci <- NA
-  }
-  results_list <- c(
-    p_dists_ab,
-    p_dists_boot,
-    list(
-      p_opsign_ci = p_opsign_ci,
-      n_conv_warn = n_conv_warn,
-      n_singular = n_singular,
-      ab = ab$ab,
-      boot_ab = boot_ab_est,
-      ab_warnings = ab$warnings,
-      ab_singular = ab$singular),
-    as.list(quantile(ab_vec, probs = c(.025, .975, seq(0, 1, 0.25)))))
-  return(results_list)
-}
 
 #' run_simulation
 #'
 #' @param nreps Number of repetitions using new data.
-#' @param niter For each simulated data set, number of permutation or bootstrap iterations.
+#' @param niter For each simulated data set, number of permutation or bootstrap
+#'   iterations.
 #' @param mc.cores Number of cores to use.
 #' @param simtype Permutations or bootstrap.
 #' @param J
@@ -293,7 +113,10 @@ boot_ab <- function(x, nsim, ncpus, re.form = NA, type = c('parametric', 'semipa
 #' @param theta_ab
 #' @param optimizer
 #' @param re.form
-#' @param permtype
+#' @param permtype This can be used to specify either the permutation type
+#'   ('within', 'between', or 'between_within'), or if simtype is 'bootstrap',
+#'   and boottype is 'cases', it is used to specify how cases are resampled,
+#'   ('groups', 'within', 'both').
 #' @param boottype
 #'
 #' @return
@@ -328,123 +151,105 @@ run_simulation <- function(nreps, niter, mc.cores, simtype = 'permutation', J = 
     if(simtype == 'permutation'){
       results_list <- permute_ab(x = ab_mod, nperms = niter, mc.cores = mc.cores, re.form = re.form)
     } else if(simtype == 'bootstrap'){
-      results_list <- boot_ab(x = ab_mod, nsim = niter, ncpus = mc.cores, re.form = re.form, type = boottype)
+      theboot <- boot_ab(x = ab_mod, nsim = niter, ncpus = mc.cores, re.form = re.form, type = boottype, how = permtype)
+      results_list <- do.call(rbind,
+                              list(summary(theboot, which = 'ab', verbose = T),
+                                   summary(theboot, which = 'a'),
+                                   summary(theboot, which = 'b')))
     }
     return(results_list)
   })
   return(reps)
 }
 
-#' make_bootFUN
+
+#' generate_slurm_file
 #'
-#' @param x A permediatrMod object with the full mediation specification.
-#' @param path Which path is being bootstrapped, the 'a' path, or the 'b' path?
-#' @param is.null.model Should the boot FUN expect to get a null model without
-#'   the effect of interest? Set this to true of you're doing parametric or
-#'   semiparametric bootstrapping for the nil null distribution. The
-#'   \code{\link{make_null_formula}} should be used to create the null model to
-#'   be the basis for (semi-)parametric simulation.
+#' @param bash_out_dir
+#' @param nreps
+#' @param mc.cores
+#' @param J
+#' @param n_j
+#' @param a
+#' @param b
+#' @param c_p
+#' @param theta_ab
+#' @param optimizer
+#' @param job_name
+#' @param job_time
+#' @param job_mem
+#' @param partition
+#' @param email_address
+#' @param save_dir
+#' @param niter
+#' @param simtype
+#' @param re.form
 #'
 #' @return
 #' @export
 #'
 #' @examples
-make_bootFUN <- function(x, path = c('a', 'b'), is.null.model = F){
-  func <- with(as.list(x$parspec), {
-    if(path == 'a'){
-      name <- x.name
-      random <- random.a
-      o.name <- m_a.name
-      #In the case that the model passed to the bootstrap FUN is a null model
-      #based on bootstrap simulations, we want to use the formula from the
-      #original model and estimate the effect of interest in the context of that
-      #null model. The og model will be passed to the updator and updated if
-      #is.null.model is true.
-      og <- x$model.m
-    } else if(path == 'b'){
-      name <- m_b.name
-      random <- random.b
-      o.name <- y.name
-      og <- x$model.y
-    } else {
-      stop('Incorrect path specification')
-    }
-    func <- function(model){
-      if(is.null.model){
-        newdata__ <- og@frame
-        newdata__[, o.name] <- model@frame[,o.name]
-        umodel <- update(model, formula(og), data = newdata__)
-      } else {
-        umodel <- model
-      }
-      if(random==T){
-        r <- coef(umodel)[[group.id]][[name]]
+generate_slurm_file <- function(bash_out_dir, nreps, niter, mc.cores, simtype = 'permutation', J = 100, n_j = 4, a = 0, b = 0, c_p = 0, theta_ab = .2, re.form = NULL, permtype = 'within', boottype = 'parametric', optimizer = "bobyqa", job_name = "permediatr", job_time = "2-00:00:00", job_mem = "5G", partition = "ncf_holy", email_address = NULL, save_dir = "./", fname_prefix = 'pmjob'){
 
-      } else {
-        r <- fixef(umodel)[name]
-      }
-      return(r)
-    }
-    func
-  })
-  return(func)
-}
+  path_to_script <- system.file(file.path('bin', 'permediatr_simulation.R'), package = 'permediatr')
 
-#' make_null_model
-#'
-#' @param x A permediatrMod object with the full mediation specification.
-#' @param path For which path is the null model being generated, the 'a' path, or the 'b' path?
-#'
-#' @return
-#' @export
-#'
-#' @examples
-make_null_model <- function(x, path = c('a', 'b')){
-  mod <- with(as.list(x$parspec), {
-    if(path == 'a'){
-      name <- x.name
-      random <- random.a
-      o.name <- m_a.name
-      og <- x$model.m
-    } else if(path == 'b'){
-      name <- m_b.name
-      random <- random.b
-      o.name <- y.name
-      og <- x$model.y
-    } else {
-      stop('Incorrect path specification')
-    }
-    mod <- update(og, permediatr::make_null_formula(model = og,
-                                                    name = name,
-                                                    random = random))
-    mod
-  })
-  return(mod)
-}
+  array_df <- expand.grid(a = a, b = b, c_p = c_p, theta_ab = theta_ab, re.form = re.form, permtype = permtype, boottype = boottype)
+  array_df <- array_df[array_df$a == 0 | array_df$b == 0, ]
+  job_numbers <- 1:dim(array_df)[1]-1
+  job_array_range <- paste(range(job_numbers), collapse = '-')
+  ndigits <- max(floor(log10(abs(job_numbers)))+1)
+  sim_names <- sprintf(paste0(fname_prefix, '_%0', ndigits,'d'), job_numbers)
+  name_values <- paste(sim_names, collapse = ' ')
+  param_values <- sapply(array_df, paste, collapse = ' ')
 
-#' make_null_formula
-#'
-#' @param model A specific model from a permediatrMod object.
-#' @param name The variable name to be excluded from the model.
-#' @param random Whether the variable name is also included in the random
-#'   effects part of the model.
-#'
-#' @return
-#' @export
-#'
-#' @examples
-make_null_formula <- function(model, name, random){
-  fixed_form <- nobars(formula(model))
-  if(random){
-    re_list <- findbars(formula(model))
-    re_null <- paste(lapply(re_list, function(x) {
-      re <- as.character(re_list[[1]])
-      re_2 <- gsub(paste0('(.*?) \\+ ', name,'(.*?)'), '\\1\\2', re[[2]])
-      paste0('(', re_2, ' ', re[[1]], ' ', re[[3]],')')
-    }), collapse = ' + ')
-    form_null <- update(fixed_form, paste(c(paste0('. ~ . -', name), re_null), collapse = ' + '))
-  } else {
-    form_null <- update(formula(model), paste0('. ~ . -', name))
+  mail_line <- NULL
+  if(!is.null(email_address)){
+    mail_line <- paste0('
+#SBATCH --mail-user=', email_address, '
+#SBATCH --mail-type=ALL')
   }
-  return(form_null)
+
+  bash_code <- paste0(
+    '#!/bin/bash
+#
+#SBATCH -J ', job_name,'
+#SBATCH --time=', job_time,'
+#SBATCH -n 1
+#SBATCH --cpus-per-task=',mc.cores,'
+#SBATCH --mem=', job_mem,'
+#SBATCH --partition=', partition,'
+# Outputs ----------------------------------
+#SBATCH -o %x-%A-%a.out
+#SBATCH -e %x-%A-%a.err', mail_line,'
+# ------------------------------------------
+#
+#usage: sbatch --array=', job_array_range,' ', file.path(bash_out_dir, 'slurmjob.bash'),'
+
+#--MODULES--#
+module load gcc/8.2.0-fasrc01
+module load R/3.5.1-fasrc01
+#-----------#
+
+nreps=', nreps,'
+niter=', niter,'
+mccores=', mc.cores,'
+simtype=', simtype,'
+J=', J,'
+nj=', n_j,'
+a=(', param_values[['a']],')
+b=(', param_values[['b']],')
+cp=(', param_values[['c_p']],')
+thetaab=(', param_values[['theta_ab']],')
+reform=(', param_values[['re.form']],')
+permtype=(', param_values[['permtype']],')
+boottype=(', param_values[['boottype']],')
+optimizer="', optimizer,'"
+dataout="', save_dir,'"
+name=(', name_values,')
+index=${SLURM_ARRAY_TASK_ID}
+permediatrpath=', path_to_script,'
+
+Rscript "${permediatrpath}" --nreps "${nreps}" --niter "${niter}" --mc.cores "${mccores}" --simtype "${simtype}" --J "${J}" --n_j "${nj}" --a "${a[${index}]}" --b "${b[${index}]}" --c_p "${cp[${index}]}" --theta_ab "${thetaab[${index}]}" --optimizer "${optimizer}" --reform "${reform[${index}]}" --permtype "${permtype[${index}]}" --boottype "${boottype[${index}]}" "${dataout}" "${name[${index}]}"')
+
+  writeLines(bash_code, con = file.path(bash_out_dir, 'slurmjob.bash'))
 }

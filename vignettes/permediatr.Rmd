@@ -47,20 +47,27 @@ proportion_fp <- function(p, alpha = .05) {
   l.025 <- p_fp - 1.96 * p_se
   return(list(p_fp = p_fp, l.025 = l.025, u.975 = u.975))
 }
-bias_ci <- function(v){
-  bias <- mean(v)
+mean_ci <- function(v, name = ''){
+  mu <- mean(v)
   se <- sd(v)/sqrt(length(v))
-  u <- bias + 1.96*se
-  l <- bias - 1.96*se
-  return(list(bias = bias, l.025 = l, u.975 = u))
+  u <- mu + 1.96*se
+  l <- mu - 1.96*se
+  out <- list(mu = mu, l.025 = l, u.975 = u)
+  names(out) <- paste0(name, names(out))
+  return(out)
 }
 perm_file_list <- dir(system.file('csv', package = 'permediatr'), 
                       pattern = 'pmjob.*csv', full.names = TRUE)
 perm_sim_results <- data.table::rbindlist(lapply(perm_file_list, data.table::fread), fill = TRUE)
 set(perm_sim_results, i = which(is.na(perm_sim_results[['permtype']])), j = 'permtype', 'within')
 perm_sim_results[, a_or_b_size := pmax(a,b)]
-perm_sim_bias_summary <- perm_sim_results[, bias_ci(ab - mean_ab_perm),
+perm_sim_results[, `:=`(bias = mean_ab_perm - ab, ab_bc = 2*ab - mean_ab_perm)]
+perm_sim_bias_summary <- perm_sim_results[, c(mean_ci(abs(ab), name = 'ab_'), mean_ci(abs(ab_bc), name = 'abbc_'), mean_ci(abs(bias), name = 'bias_')),
                                           by = .(a_or_b_size, c_p, reform, permtype)]
+perm_sim_bias_summary_l <- data.table::dcast(data.table::melt(perm_sim_bias_summary,
+                                                              id.vars = c(c('a_or_b_size', 'c_p', 'reform', 'permtype')),
+                                                              value.name = 'value')[, c('variable', 'stat') := tstrsplit(variable, "_", fixed=TRUE)],
+                                             ... ~ stat, value.var = 'value')
 perm_sim_results_l <- data.table::melt(perm_sim_results, 
                                        id.vars = c('a_or_b_size', 'c_p', 'reform', 'permtype'),
                                        measure.vars = grep('p_', names(perm_sim_results), value = T), 
@@ -132,6 +139,17 @@ ggplot(perm_sim_results_summary_l[is.na(reform) & permtype == 'between_within'],
 DT::datatable(perm_sim_results_summary_l)
 ```
 
+## Bias
+
+```{r}
+ggplot(perm_sim_bias_summary_l[variable != 'bias'], aes(x = a_or_b_size, y = mu, group = interaction(variable, c_p), color = factor(variable))) + 
+  geom_linerange(aes(ymin = l.025, ymax = u.975), position = position_dodge(width = .1)) + 
+  geom_line(position = position_dodge(width = .1), alpha = .5) +
+  geom_point(aes(shape = factor(c_p)), position = position_dodge(width = .1)) + 
+  facet_grid(permtype ~ reform) +
+  theme_minimal()
+```
+
 ## Table of Bias
 
 ```{r}
@@ -145,8 +163,13 @@ boot_file_list <- dir(system.file('csv', package = 'permediatr'),
                       pattern = 'boot.*csv', full.names = TRUE)
 boot_sim_results <- data.table::rbindlist(lapply(boot_file_list, data.table::fread), fill = TRUE)
 boot_sim_results[, a_or_b_size := pmax(a,b)]
-boot_sim_bias_summary <- boot_sim_results[, bias_ci(ab - boot_ab),
+boot_sim_results[, `:=`(bias = boot_ab - ab, ab_bc = 2*ab - boot_ab)]
+boot_sim_bias_summary <- boot_sim_results[, c(mean_ci(abs(ab), name = 'ab_'), mean_ci(abs(ab_bc), name = 'abbc_'), mean_ci(abs(bias), name = 'bias_')),
                                           by = .(a_or_b_size, c_p, reform, boottype)]
+boot_sim_bias_summary_l <- data.table::dcast(data.table::melt(boot_sim_bias_summary,
+                                                              id.vars = c(c('a_or_b_size', 'c_p', 'reform', 'boottype')),
+                                                              value.name = 'value')[, c('variable', 'stat') := tstrsplit(variable, "_", fixed=TRUE)],
+                                             ... ~ stat, value.var = 'value')
 boot_sim_results_l <- data.table::melt(boot_sim_results, 
                                        id.vars = c('a_or_b_size', 'c_p', 'reform', 'boottype'),
                                        measure.vars = grep('p_', names(boot_sim_results), value = T), 
@@ -178,6 +201,16 @@ ggplot(boot_sim_results_summary_l,
 
 ```{r}
 DT::datatable(boot_sim_results_summary_l)
+```
+
+## Bias
+
+```{r}
+ggplot(boot_sim_bias_summary_l[variable != 'bias'], aes(x = a_or_b_size, y = mu, group = interaction(variable, c_p), color = factor(variable))) + 
+  geom_linerange(aes(ymin = l.025, ymax = u.975), position = position_dodge(width = .1)) + 
+  geom_line(position = position_dodge(width = .1), alpha = .5) +
+  geom_point(aes(shape = factor(c_p)), position = position_dodge(width = .1)) + 
+  theme_minimal()
 ```
 
 ## Table of Bias
