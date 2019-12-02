@@ -509,7 +509,7 @@ bootMerCases <- function(x, FUN, nsim = 1, seed = NULL, how = c('groups', 'withi
       resampled_data <- data
     }
     if(how %in% c('within', 'both')){
-      newrows <- resampled_data[, sample(.I, size = .N, replace = TRUE), by = id][[2]]
+      newrows <- resampled_data[, sample(.I, size = .N, replace = TRUE), by = eval(clusters[1])][[2]]
       resampled_data <- resampled_data[newrows]
     }
     return(as.data.frame(resampled_data))
