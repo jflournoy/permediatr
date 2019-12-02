@@ -54,8 +54,8 @@ if(inherits(re.form, 'try-error')){
   stop('Problem with --reform value: ', args$reform)
 }
 
-if(!args$permtype %in% c('between', 'within', 'between_within')){
-  stop('--permtype specified incorrectly. Should be "between", "within" or "between_within", not: ', args$permtype)
+if(!args$permtype %in% c('between', 'within', 'between_within', 'groups', 'both')){
+  stop('--permtype specified incorrectly. See help. You input:  ', args$permtype)
 }
 
 if(is.null(args$niter) && is.null(args$nperms)){
