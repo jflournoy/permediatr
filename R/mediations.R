@@ -523,7 +523,7 @@ bootMerCases <- function(x, FUN, nsim = 1, seed = NULL, how = c('groups', 'withi
   t0 <- FUN(x)
 
   if(parallel == 'multicore'){
-    split_rep.data <- suppressWarnings(split(rep.data, 1:mc.cores))
+    split_rep.data <- suppressWarnings(split(rep.data, 1:ncpus))
     tstar <- unlist(parallel::mclapply(split_rep.data, function(D_list) {
       lapply(D_list, function(D){
         FUN(update(x, data = D))
