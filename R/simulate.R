@@ -226,7 +226,7 @@ generate_slurm_file <- function(bash_out_dir, nreps, niter, mc.cores, simtype = 
 #usage: sbatch --array=', job_array_range,' ', file.path(bash_out_dir, 'slurmjob.bash'),'
 
 #--MODULES--#
-module load gcc/8.2.0-fasrc01
+module load gcc/7.1.0-fasrc01
 module load R/3.5.1-fasrc01
 #-----------#
 
