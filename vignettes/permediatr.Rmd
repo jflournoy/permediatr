@@ -21,7 +21,8 @@ permediatr::generate_slurm_file(bash_out_dir = '../inst/bin/',
                                 c_p = c(0, .8),
                                 theta_ab = .2,
                                 re.form = c('NA'), 
-                                boottype = 'parametric', 
+                                boottype = c('cases'),
+                                permtype = c('groups', 'within', 'both'),
                                 optimizer = 'bobyqa',
                                 job_name = 'bootmediatr',
                                 job_time = '3-00:00:00',
@@ -29,7 +30,7 @@ permediatr::generate_slurm_file(bash_out_dir = '../inst/bin/',
                                 partition = 'ncf_holy', 
                                 email_address = 'john_flournoy@fas.harvard.edu', 
                                 save_dir = '/net/holynfs01/srv/export/mclaughlin/share_root/users/jflournoy/data/boot',
-                                fname_prefix = 'boot_NA_par')
+                                fname_prefix = 'boot_cases')
 ```
 
 The output from the simulations needs to be collected first from the csv output. Another aspect of the output is that each simulation gives the p-value of the indirect path as just the cumulative probability. We want to reject the null for any indirect path where that is either < .025 or > .975. I'll summarize the output to look at the error rate (any null rejection) for each subset of simulation input (a path, b path, and c_p path). There are three ways I could imagine getting a p-value from the permutation-generated confidence interval -- first, subtracting the mean of all permutations, to center the CI around 0, `p_ab_perm_mean_c`; second, centering that distribution around the model-estimated a*b path, `p_ab_perm_ab_c`; and third, taking the proportion of the CI that is below 0. In the final case, to keep the test two-sided, we reject the null when > .025 proportion of the tail is of the sign opposite the indirect effect estimate.

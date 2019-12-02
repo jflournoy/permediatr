@@ -13,15 +13,15 @@
 #SBATCH --mail-type=ALL
 # ------------------------------------------
 #
-#usage: sbatch --array=0-9 inst/bin//slurmjob.bash
+#usage: sbatch --array=0-9 ../inst/bin//slurmjob.bash
 
 #--MODULES--#
 module load gcc/8.2.0-fasrc01
 module load R/3.5.1-fasrc01
 #-----------#
 
-nreps=500
-nperms=2500
+nreps=500s
+niter=2500
 mccores=24
 simtype=bootstrap
 J=100
