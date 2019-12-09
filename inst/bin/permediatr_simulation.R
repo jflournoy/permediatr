@@ -87,16 +87,16 @@ results <- permediatr::run_simulation(nreps = as.numeric(args$nreps),
 
 rds_file <- file.path(args$save_dir, paste0(args$simulation_name, '.rds'))
 message('Saving results to RDS file: ', rds_file)
-saveRDS(results, file = rds_file)
+saveRDS(list(results = results, args = args), file = rds_file)
 csv_file <- file.path(args$save_dir, paste0(args$simulation_name, '.csv'))
 message('Saving results to CSV file: ', csv_file)
-results_df <- do.call(rbind, lapply(results, function(x) {
-  if(inherits(x, 'list')){
-    return(data.frame(t(unlist(x[-which(names(x) %in% c('warnings', 'singular'))]))))
-  } else if(inherits(x, 'matrix')) {
-    return(as.data.frame(x[,-which(dimnames(x)[[2]] %in% c('warnings', 'singular'))]))
-  }
-  }))
+
+results_df <- data.table::rbindlist(lapply(results, function(x) {
+  athing <- x[,-which(dimnames(x)[[2]] %in% c('warnings', 'singular'))]
+  adt <- data.table::as.data.table(apply(athing, 2,  unlist, recursive = F))
+  return(adt)
+}))
+
 results_csv <- cbind(results_df, data.frame(args))
 write.csv(results_csv, file = csv_file)
 
